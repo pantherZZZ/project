@@ -1,0 +1,104 @@
+package com.yy.data.model;
+
+public class UdpRecord {
+	private String address;
+	private String message;
+	private String port;
+	private String sendertime;
+	private String type;
+	private String equid;
+	private String chargecent;
+	private String state;
+	private String isanswer;
+	private String hex_message;
+	private String source_;
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
+	}
+
+	public String getPort() {
+		return port;
+	}
+
+	public void setPort(String port) {
+		this.port = port;
+	}
+
+	public String getSendertime() {
+		return sendertime;
+	}
+
+	public void setSendertime(String sendertime) {
+		this.sendertime = sendertime;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String getEquid() {
+		return equid;
+	}
+
+	public void setEquid(String equid) {
+		this.equid = equid;
+	}
+
+	public String getChargecent() {
+		return chargecent;
+	}
+
+	public void setChargecent(String chargecent) {
+		this.chargecent = chargecent;
+	}
+
+	public String getState() {
+		return state;
+	}
+
+	public void setState(String state) {
+		this.state = state;
+	}
+
+	public String getIsanswer() {
+		return isanswer;
+	}
+
+	public void setIsanswer(String isanswer) {
+		this.isanswer = isanswer;
+	}
+
+	public String getHex_message() {
+		return hex_message;
+	}
+
+	public void setHex_message(String hex_message) {
+		this.hex_message = hex_message;
+	}
+
+	public String getSource_() {
+		return source_;
+	}
+
+	public void setSource_(String source_) {
+		this.source_ = source_;
+	}
+
+}

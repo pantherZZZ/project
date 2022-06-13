@@ -1,0 +1,211 @@
+package com.yy.data.vo;
+
+public class WproductVo {
+	private String proid;
+
+	private String configid;
+
+	private String proname;
+
+	private String procode;
+
+	private String recordtime;
+
+	private String manufactid;
+
+	private String protype;
+
+	private String gpsx;
+
+	private String gpsy;
+
+	private String address;
+
+	private String mangerunit;
+
+	private String manger;
+
+	private String mangermobile;
+
+	private String workstate;
+
+	private String belongunit;
+
+	private String defensestate;
+
+	/**
+	 * 性别
+	 */
+	private String itter;
+	/**
+	 * 父级id
+	 */
+	private String superid;
+	/**
+	 * 类型
+	 */
+	private String type;
+
+	private String buildingnumber;
+
+	public String getBuildingnumber() {
+		return buildingnumber;
+	}
+
+	public void setBuildingnumber(String buildingnumber) {
+		this.buildingnumber = buildingnumber;
+	}
+
+	public String getProid() {
+		return proid;
+	}
+
+	public void setProid(String proid) {
+		this.proid = proid == null ? null : proid.trim();
+	}
+
+	public String getConfigid() {
+		return configid;
+	}
+
+	public void setConfigid(String configid) {
+		this.configid = configid == null ? null : configid.trim();
+	}
+
+	public String getProname() {
+		return proname;
+	}
+
+	public void setProname(String proname) {
+		this.proname = proname == null ? null : proname.trim();
+	}
+
+	public String getProcode() {
+		return procode;
+	}
+
+	public void setProcode(String procode) {
+		this.procode = procode == null ? null : procode.trim();
+	}
+
+	public String getRecordtime() {
+		return recordtime;
+	}
+
+	public void setRecordtime(String recordtime) {
+		this.recordtime = recordtime == null ? null : recordtime.trim();
+	}
+
+	public String getManufactid() {
+		return manufactid;
+	}
+
+	public void setManufactid(String manufactid) {
+		this.manufactid = manufactid == null ? null : manufactid.trim();
+	}
+
+	public String getProtype() {
+		return protype;
+	}
+
+	public void setProtype(String protype) {
+		this.protype = protype == null ? null : protype.trim();
+	}
+
+	public String getGpsx() {
+		return gpsx;
+	}
+
+	public void setGpsx(String gpsx) {
+		this.gpsx = gpsx == null ? null : gpsx.trim();
+	}
+
+	public String getGpsy() {
+		return gpsy;
+	}
+
+	public void setGpsy(String gpsy) {
+		this.gpsy = gpsy == null ? null : gpsy.trim();
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address == null ? null : address.trim();
+	}
+
+	public String getMangerunit() {
+		return mangerunit;
+	}
+
+	public void setMangerunit(String mangerunit) {
+		this.mangerunit = mangerunit == null ? null : mangerunit.trim();
+	}
+
+	public String getManger() {
+		return manger;
+	}
+
+	public void setManger(String manger) {
+		this.manger = manger == null ? null : manger.trim();
+	}
+
+	public String getMangermobile() {
+		return mangermobile;
+	}
+
+	public void setMangermobile(String mangermobile) {
+		this.mangermobile = mangermobile == null ? null : mangermobile.trim();
+	}
+
+	public String getWorkstate() {
+		return workstate;
+	}
+
+	public void setWorkstate(String workstate) {
+		this.workstate = workstate == null ? null : workstate.trim();
+	}
+
+	public String getBelongunit() {
+		return belongunit;
+	}
+
+	public void setBelongunit(String belongunit) {
+		this.belongunit = belongunit == null ? null : belongunit.trim();
+	}
+
+	public String getDefensestate() {
+		return defensestate;
+	}
+
+	public void setDefensestate(String defensestate) {
+		this.defensestate = defensestate == null ? null : defensestate.trim();
+	}
+
+	public String getItter() {
+		return itter;
+	}
+
+	public void setItter(String itter) {
+		this.itter = itter;
+	}
+
+	public String getSuperid() {
+		return superid;
+	}
+
+	public void setSuperid(String superid) {
+		this.superid = superid;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+}

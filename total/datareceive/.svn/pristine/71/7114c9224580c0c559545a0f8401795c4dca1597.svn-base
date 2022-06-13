@@ -1,0 +1,52 @@
+package com.yy.startup;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.stereotype.Component;
+
+import com.yy.common.constant.MyConstants;
+import com.yy.data.udp.UdpService;
+import com.yy.data.udp.UdpStart;
+import com.yy.data.udp.UdpStartThread;
+
+@Component
+public class StartConfig implements ApplicationRunner {
+	@Autowired
+	private UdpService udpService;
+
+	@Override
+	public void run(ApplicationArguments args) throws Exception {
+
+		System.out.println("starts初始化系统");
+		// 初始化papram.PROPERTY
+		Properties props = new Properties();
+		InputStream inputStream = null;
+		try {
+			inputStream = getClass().getClassLoader().getResourceAsStream("params.properties");
+			props.load(inputStream);
+			MyConstants.PROPERTY = props;
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		} finally {
+			try {
+				if (inputStream != null)
+					inputStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		// 读取配置文件，组装数据到MyConstants
+		MyConstants.fillToMyConstants(props);
+		MyConstants.initExt();
+		//
+		new Thread(new UdpStartThread(1)).start();
+
+	}
+
+}

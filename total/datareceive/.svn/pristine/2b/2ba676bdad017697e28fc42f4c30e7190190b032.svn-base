@@ -1,0 +1,728 @@
+package com.yy.data.answer;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+import org.apache.commons.codec.binary.Base64;
+import javax.net.ssl.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.DatatypeConverter;
+
+import org.apache.commons.codec.Decoder;
+import org.apache.commons.codec.binary.Base64;
+import sun.misc.BASE64Decoder; 
+import org.apache.commons.lang.CharEncoding;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
+import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.client.RestTemplate;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.huawei.iotplatform.client.NorthApiException;
+import com.yy.common.constant.MyConstants;
+import com.yy.common.utils.DateUtil;
+import com.yy.common.utils.JsonUtil;
+import com.yy.data.model.DeviceDataInfo;
+import com.yy.data.service.DeviceDataInfoService;
+
+import javax.net.ssl.SSLContext;
+
+
+@Controller
+@RequestMapping(value = "/lockAnswer")
+public class UdpLockAnswer {
+	private static String serverUrl = "https://service.iwunu.com/dx";
+	private static String merNo = "4b3e981bee21488a8d033daeea09d2d01";
+	private static String lockType = "101";
+	private static String MasterKey = "2be8defb81ff468fb2d5e60950482ed0";
+	private String operator = "10513169";
+	private static String productId = "10055451";
+	private String ttl = "180";
+	@Autowired
+	private DeviceDataInfoService deviceDataInfoService;
+		
+	/**
+	* 添加门锁
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/addLock") 
+	public String addLock(String mesi,String lockId,String lockName,String lockAddress,String longitude,String latitude) throws
+		Exception {
+		String url=serverUrl+"/iot/registLock";
+		JSONObject resultObj = new JSONObject();
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("nodeId", mesi);
+		jsonObject.put("lockId", lockId);
+		jsonObject.put("merNo", merNo);
+		jsonObject.put("lockName", lockName);
+		jsonObject.put("lockAddress", lockAddress);
+		jsonObject.put("longitude", longitude);
+		jsonObject.put("latitude", latitude);
+		jsonObject.put("lockType", "2");
+		jsonObject.put("appType", "1");
+		jsonObject.put("platType", "dx");
+		HttpPost post = new HttpPost(url);
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			post.setHeader("Content-Type","application/json;charset=utf-8");
+			post.addHeader("Authorization", "Basic YWRtaW46");
+			StringEntity postingString = new StringEntity(jsonObject.toString(),"utf-8");
+			post.setEntity(postingString);
+			HttpResponse response = httpClient.execute(post);
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			System.out.println(strber.toString());
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String errorDesc=String.valueOf(obj.get("errorDesc"));
+			String lockToken=String.valueOf(obj.get("lockToken"));
+			if("succ".equals(code)) {
+				resultObj.put("result", "1");
+				resultObj.put("lockToken",lockToken);
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("info",errorDesc);
+			}
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			post.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+
+	/**
+	* 解绑门锁
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/deleteLock") 
+	public String deleteLock(String lockToken) throws
+		Exception { 
+		String url=serverUrl+"/iot/unBindLock";
+		JSONObject resultObj = new JSONObject();
+		HttpGet httpGet = new HttpGet(url);
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			httpGet.setHeader("Content-Type","application/json;charset=utf-8");
+			httpGet.addHeader("Authorization",lockToken);
+			HttpResponse response = httpClient.execute(httpGet);
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String errorDesc=String.valueOf(obj.get("errorDesc"));
+			if("succ".equals(code)) {
+				resultObj.put("result", "1");
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("info",errorDesc);
+			}
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			httpGet.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+						  
+	/**
+	* 远程开锁
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/openLock") 
+	public String openLock(String lockToken) throws
+		Exception {
+		String url=serverUrl+"/iot/openLock";
+		JSONObject resultObj = new JSONObject();
+		HttpGet httpGet = new HttpGet(url);
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			httpGet.setHeader("Content-Type","application/json;charset=utf-8");
+			httpGet.addHeader("Authorization",lockToken);
+			HttpResponse response = httpClient.execute(httpGet);
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String errorDesc=String.valueOf(obj.get("errorDesc"));
+			if("succ".equals(code)) {
+				resultObj.put("result", "1");
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("info",errorDesc);
+			}
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			httpGet.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+		
+	/**
+	* 获取设备上线状态
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/getLockState") 
+	public String getLockState(String lockToken) throws
+		Exception { 
+		String url=serverUrl+"/iot/getDeviceOnlineStatus";
+		JSONObject resultObj = new JSONObject();
+		HttpGet httpGet = new HttpGet(url);
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			httpGet.setHeader("Content-Type","application/json;charset=utf-8");
+			httpGet.addHeader("Authorization",lockToken);
+			HttpResponse response = httpClient.execute(httpGet);
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String errorDesc=String.valueOf(obj.get("errorDesc"));
+			String count=String.valueOf(obj.get("count"));
+			String electric=String.valueOf(obj.get("electric"));
+			String status=String.valueOf(obj.get("status"));
+			if("succ".equals(code)) {
+				resultObj.put("result", "1");
+				resultObj.put("count",count);
+				resultObj.put("electric",electric);
+				resultObj.put("status",status);
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("info",errorDesc);
+			}
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			httpGet.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+		
+	/**
+	* 设置密码
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/setPassWord") 
+	public String setPassWord(String lockToken,String password,String startTime,String endTime,String pitNum) throws
+		Exception { 
+		String serialNumber = UUID.randomUUID().toString().replaceAll("-","");
+		String result="";
+		JSONObject resultObj = new JSONObject();
+		JSONObject jsonObject = new JSONObject();
+		
+		jsonObject.put("pitNum", pitNum);
+		jsonObject.put("cmdType", "password");
+		jsonObject.put("cmdContext",password);
+		jsonObject.put("startTime",startTime);
+		jsonObject.put("endTime",endTime);
+		jsonObject.put("lockType",lockType);
+		jsonObject.put("serialNumber",serialNumber);
+		//HttpPost post = new HttpPost("https://hotel.iwunu.com/wunu-lock/iot/cmdIssued");
+		HttpPost post = new HttpPost("https://service.iwunu.com/dx/iot/cmdIssued");
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			post.addHeader(HTTP.CONTENT_TYPE, "application/json");
+			post.addHeader("Authorization",lockToken);
+			StringEntity postingString = new StringEntity(jsonObject.toString(),"utf-8");
+			postingString.setContentType("application/x-www-form-urlencoded");
+			post.setEntity(postingString);
+			HttpResponse response = httpClient.execute(post);
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String errorDesc=String.valueOf(obj.get("errorDesc"));
+			if("succ".equals(code)) {
+				resultObj.put("result", "1");
+				resultObj.put("serialNumber",serialNumber);
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("info",errorDesc);
+			}
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			post.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+		
+	/**
+	* 设置指纹
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/addFingerprint") 
+	public String addFingerprint(String lockToken,String cmdContext,String startTime,String endTime,String pitNum) throws
+		Exception { 
+		String serialNumber = UUID.randomUUID().toString().replaceAll("-","");
+		String result="";
+		JSONObject resultObj = new JSONObject();
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("pitNum", pitNum);
+		jsonObject.put("cmdType", "fingerPrint");
+		jsonObject.put("cmdContext",cmdContext);
+		jsonObject.put("startTime",startTime);
+		jsonObject.put("endTime",endTime);
+		jsonObject.put("lockType",lockType);
+		System.out.println(jsonObject);
+		//HttpPost post = new HttpPost("https://hotel.iwunu.com/wunu-lock/iot/cmdIssued");
+		HttpPost post = new HttpPost("https://service.iwunu.com/dx/iot/cmdIssued");
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			post.addHeader(HTTP.CONTENT_TYPE, "application/json");
+			post.addHeader("Authorization",lockToken);
+			StringEntity postingString = new StringEntity(jsonObject.toString(),"utf-8");
+			postingString.setContentType("application/x-www-form-urlencoded");
+			post.setEntity(postingString);
+			HttpResponse response = httpClient.execute(post);
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String errorDesc=String.valueOf(obj.get("errorDesc"));
+			if("succ".equals(code)) {
+				resultObj.put("result", "1");
+				resultObj.put("serialNumber",serialNumber);
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("info",errorDesc);
+			}
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			post.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+	
+	/**
+	* 删除密码
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/delPassWord") 
+	public String delPassWord(String lockToken,String password,String pitNum) throws
+		Exception { 
+		String result="";
+		JSONObject resultObj = new JSONObject();
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("cmdType", "deletePassword");
+		jsonObject.put("cmdContext",password);
+		jsonObject.put("startTime","");
+		jsonObject.put("endTime","");
+		jsonObject.put("lockType",lockType);
+		jsonObject.put("pitNum",pitNum);
+		//HttpPost post = new HttpPost("https://hotel.iwunu.com/wunu-lock/iot/cmdIssued");
+		HttpPost post = new HttpPost("https://service.iwunu.com/dx/iot/cmdIssued");
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			post.setHeader("Content-Type","application/json;charset=utf-8");
+			post.addHeader("Authorization",lockToken);
+			StringEntity postingString = new StringEntity(jsonObject.toString(),"utf-8");
+			post.setEntity(postingString);
+			HttpResponse response = httpClient.execute(post);
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String errorDesc=String.valueOf(obj.get("errorDesc"));
+			if("succ".equals(code)) {
+				resultObj.put("result", "1");
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("info",errorDesc);
+			}
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			post.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+	
+	/**
+	* 添加卡
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/addCard") 
+	public String addCard(String lockToken,String cardNo,String startTime,String endTime,String pitNum) throws
+		Exception { 
+		JSONObject resultObj = new JSONObject();
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("cmdType", "cardNo");
+		jsonObject.put("cmdContext",cardNo);
+		jsonObject.put("startTime",startTime);
+		jsonObject.put("endTime",endTime);
+		jsonObject.put("lockType",lockType);
+		jsonObject.put("pitNum", pitNum);
+		//HttpPost post = new HttpPost("https://hotel.iwunu.com/wunu-lock/iot/cmdIssued");
+		HttpPost post = new HttpPost("https://service.iwunu.com/dx/iot/cmdIssued");
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			post.setHeader("Content-Type","application/json;charset=utf-8");
+			post.addHeader("Authorization",lockToken);
+			StringEntity postingString = new StringEntity(jsonObject.toString(),"utf-8");
+			post.setEntity(postingString);
+			HttpResponse response = httpClient.execute(post);
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String errorDesc=String.valueOf(obj.get("errorDesc"));
+			if("succ".equals(code)) {
+				resultObj.put("result", "1");
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("info",errorDesc);
+			}
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			post.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+		
+	/**
+	* 删除卡
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/delCard") 
+	public String delCard(String lockToken,String cardNo,String pitNum) throws
+		Exception { 
+		String result="";
+		JSONObject resultObj = new JSONObject();
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("cmdType", "deleteCardNo");
+		jsonObject.put("cmdContext",cardNo);
+		jsonObject.put("startTime","");
+		jsonObject.put("endTime","");
+		jsonObject.put("lockType",lockType);
+		jsonObject.put("pitNum", pitNum);
+		HttpPost post = new HttpPost("https://service.iwunu.com/dx/iot/cmdIssued");
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			post.setHeader("Content-Type","application/json;charset=utf-8");
+			post.addHeader("Authorization", lockToken);
+			StringEntity postingString = new StringEntity(jsonObject.toString(),"utf-8");
+			post.setEntity(postingString);
+			HttpResponse response = httpClient.execute(post);
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String errorDesc=String.valueOf(obj.get("errorDesc"));
+			if("succ".equals(code)) {
+				resultObj.put("result", "1");
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("info",errorDesc);
+			}
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			post.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+		
+	/**
+	* 获取锁列表
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/getLockList") 
+	public String getLockList() throws
+		Exception { 
+		String result="";
+		String url=serverUrl+"/iot/getLockList";
+		JSONObject resultObj = new JSONObject();
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("pageNum", "1");
+		jsonObject.put("numPerPage","1000");
+		jsonObject.put("merNo",merNo);
+		jsonObject.put("lockType",lockType);
+		HttpPost post = new HttpPost(url);
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			post.setHeader("Content-Type","application/json;charset=utf-8");
+			post.addHeader("Authorization", "Basic YWRtaW46");
+			StringEntity postingString = new StringEntity(jsonObject.toString(),"utf-8");
+			post.setEntity(postingString);
+			HttpResponse response = httpClient.execute(post);
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String id=String.valueOf(obj.get("id"));
+			String electric=String.valueOf(obj.get("electric"));
+			String signal=String.valueOf(obj.get("signal"));
+			String deviceId=String.valueOf(obj.get("deviceId"));
+			if("1000".equals(code)) {
+				resultObj.put("result", "1");
+				resultObj.put("id",id);
+				resultObj.put("electric", electric);
+				resultObj.put("signal",signal);
+				resultObj.put("deviceId",deviceId);
+			}else {
+				resultObj.put("result", "0");
+			}
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			post.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+		
+	/**
+	* 获取开锁记录
+	*/
+	@ResponseBody
+	@RequestMapping(value = "/getOpenLockRecordList") 
+	public String getOpenLockRecordList(String lockToken,String cardNo,String startTime,String endTime) throws
+		Exception { 
+		String url=serverUrl+"/iot/getOpenLockRecordList";
+		JSONObject resultObj = new JSONObject();
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("cmdType", "deleteCardNo");
+		jsonObject.put("cmdContext",cardNo);
+		jsonObject.put("startTime",startTime);
+		jsonObject.put("endTime",endTime);
+		jsonObject.put("type",0);
+		jsonObject.put("lockType",lockType);
+		HttpPost post = new HttpPost("https://hotel.iwunu.com/wunu-lock/iot/cmdIssued");
+		try{
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+        
+			post.setHeader("Content-Type","application/json;charset=utf-8");
+			post.addHeader("Authorization", lockToken);
+			StringEntity postingString = new StringEntity(jsonObject.toString(),"utf-8");
+			post.setEntity(postingString);
+			HttpResponse response = httpClient.execute(post);
+			
+			InputStream in = response.getEntity().getContent();
+			BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+			StringBuilder strber= new StringBuilder();
+			String line = null;
+			while((line = br.readLine())!=null){
+				strber.append(line+'\n');
+			}
+			br.close();
+			in.close();
+			JSONArray jsStr = JSONArray.parseArray("["+strber.toString()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+			String code=String.valueOf(obj.get("code"));
+			String errorDesc=String.valueOf(obj.get("errorDesc"));
+			if("succ".equals(code)) {
+				resultObj.put("result", "1");
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("info",errorDesc);
+			}
+			
+			if(response.getStatusLine().getStatusCode()!=HttpStatus.SC_OK){
+				resultObj.put("result", "0");
+				resultObj.put("info","服务器异常");
+			}
+		} catch (Exception e){
+			resultObj.put("result", "0");
+			resultObj.put("info","请求异常");
+			throw new RuntimeException(e);
+		} finally{
+			post.abort();
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+	
+	
+
+}

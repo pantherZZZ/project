@@ -1,0 +1,14 @@
+package com.yy.data.udp;
+
+import java.util.Map;
+
+public interface MessageDataInterface {
+
+	/**
+	 * 接收信息
+	 * 
+	 * @param message
+	 * @return
+	 */
+	public Map<String, Object> reveive(byte[] message);
+}

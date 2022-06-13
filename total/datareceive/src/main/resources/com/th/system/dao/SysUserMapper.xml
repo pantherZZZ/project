@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysUserMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysUser">
+    <id column="userId" property="userId" />
+    <result column="userName" property="userName" />
+    <result column="loginName" property="loginName" />
+    <result column="password" property="password" />
+    <result column="role" property="role" />
+    <result column="phoneNumber" property="phoneNumber" />
+    <result column="mailbox" property="mailbox" />
+    <result column="isMailbox" property="isMailbox" />
+    <result column="isNote" property="isNote" />
+    <result column="noDisturbing" property="noDisturbing" />
+    <result column="forbidden" property="forbidden" />
+    <result column="profilePicture" property="profilePicture" />
+  </resultMap>
+
+  <sql id="Base_List">
+    userId,userName,loginName,role,phoneNumber,
+    mailbox,isMailbox,isNote,noDisturbing,profilePicture
+  </sql>
+
+  <select id="verifyUserName" resultType="java.lang.Integer" parameterType="java.lang.String">
+		select count(userId) from sys_user
+		<where>
+			userName = #{userName}
+		</where>
+  </select>
+
+    <select id="findByEquipmentId" resultType="com.th.system.vo.SysCautionVo" parameterType="java.lang.String">
+			select u.mailbox,u.isMailbox as isUserMailbox,
+			u.phoneNumber,u.isNote as isUserNote,u.noDisturbing,
+			u.forbidden as userForbidden,c.isMailbox,c.isNote,
+		  	c.cautionGrade,c.forbidden from 
+			sys_cautionTactics as c
+			join sys_equipment as e
+			on e.modelId = c.modelId
+			join sys_user as u
+			on u.userId = c.userId
+			and e.equipmentId = #{equipmentId}
+			and c.cautionGrade = #{cautionGrade}
+			and c.forbidden = "true"
+			group by(e.equipmentId)
+  </select>	
+
+  <update id="updateUser" parameterType="com.th.system.po.SysUser">
+        update sys_user
+        <set>
+            <if test="userName != null and userName != ''">`userName` = #{userName},</if>
+            <if test="loginName != null and loginName != ''">`loginName` = #{loginName},</if>
+            <if test="password != null and password != ''">password = #{password},</if>
+            <if test="role != null and role != ''">`role` = #{role},</if>
+            <if test="phoneNumber != null and phoneNumber != ''">`phoneNumber` = #{phoneNumber},</if>
+            <if test="mailbox != null and mailbox != ''">`mailbox` = #{mailbox},</if>
+            <if test="isMailbox != null and isMailbox != ''">`isMailbox` = #{isMailbox},</if>
+            <if test="isNote != null and isNote != ''">`isNote` = #{isNote},</if>
+            <if test="noDisturbing != null and noDisturbing != ''">`noDisturbing` = #{noDisturbing},</if>
+            <if test="forbidden != null and forbidden != ''">`forbidden` = #{forbidden},</if>
+            <if test="profilePicture != null and profilePicture != ''">`profilePicture` = #{profilePicture}</if>
+        </set>
+        where userId = #{userId}
+  </update>
+	
+	
+	
+  <insert id="insertUser" parameterType="com.th.system.po.SysUser">
+    insert into sys_user
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="userName != null">
+        userName,
+      </if>
+      <if test="loginName != null">
+        loginName,
+      </if>
+      <if test="password != null">
+        password,
+      </if>
+      <if test="role != null">
+        role,
+      </if>
+      <if test="phoneNumber != null and phoneNumber != ''">
+        phoneNumber,
+      </if>
+      <if test="mailbox != null and mailbox != ''">
+        mailbox,
+      </if>
+      <if test="isMailbox != null">
+        isMailbox,
+      </if>
+      <if test="isNote != null">
+        isNote,
+      </if>
+      <if test="noDisturbing != null">
+        noDisturbing,
+      </if>
+       <if test="forbidden != null">
+        forbidden,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="userName != null">
+        #{userName},
+      </if>
+      <if test="loginName != null">
+        #{loginName},
+      </if>
+      <if test="password != null">
+        #{password},
+      </if>
+      <if test="role != null">
+        #{role},
+      </if>
+      <if test="phoneNumber != null and phoneNumber != ''">
+        #{phoneNumber},
+      </if>
+       <if test="mailbox != null and mailbox != ''">
+        #{mailbox},
+      </if>
+       <if test="isMailbox != null">
+        #{isMailbox},
+      </if>
+       <if test="isNote != null">
+        #{isNote},
+      </if>
+       <if test="noDisturbing != null">
+        #{noDisturbing},
+      </if>
+       <if test="forbidden != null">
+         #{forbidden},
+      </if>
+    </trim>
+  </insert>	
+	
+  <select id="loginUser" resultMap="BaseMap" parameterType="java.lang.String">
+		select <include refid="Base_List" /> from sys_user
+		where loginName = #{loginName} and password = #{password}
+  </select>
+  
+  <select id="comparisonPassword" resultMap="BaseMap" parameterType="java.lang.String">
+		select <include refid="Base_List" /> from sys_user
+		where loginName = #{loginName} and password = #{password}
+  </select>
+  
+  <select id="findAll" resultMap="BaseMap">
+		select <include refid="Base_List" /> from sys_user
+		<where>
+		    1=1
+			<if test="userName != null and userName != '' ">
+		     and userName like concat('%',#{userName},'%')
+		    </if>
+		    <if test="mailbox != null and mailbox != '' ">
+		     and mailbox like concat('%',#{mailbox},'%')
+		    </if>
+		    <if test="phoneNumber != null and phoneNumber != '' ">
+		     and phoneNumber like concat('%',#{phoneNumber},'%')
+		    </if>
+		    <if test="val != null">
+		        LIMIT #{page},#{limit}
+		    </if>
+		</where>
+  </select>
+  
+  <select id="findByUserid" resultMap="BaseMap">
+		select <include refid="Base_List" /> from sys_user
+		where userId = #{userId}
+  </select>
+  
+  <select id="findList" resultMap="BaseMap" parameterType="java.lang.String">
+		select <include refid="Base_List" /> from sys_user
+		<where>
+			<if test="userName != null and userName != '' ">
+		      userName = #{userName}
+		    </if>
+		    <if test="loginName != null and loginName != '' ">
+		      and loginName = #{loginName}
+		    </if>
+		</where>
+  </select>
+  
+  <select id="findListPro" resultMap="BaseMap" parameterType="java.lang.String">
+		select <include refid="Base_List" /> from sys_user
+		<where>
+			<if test="userName != null and userName != '' ">
+		      userName like concat('%',#{userName},'%')
+		    </if>
+		    <if test="loginName != null and loginName != '' ">
+		       and loginName like concat('%',#{loginName},'%')
+		    </if>
+		</where>
+  </select>
+  
+  <select id="findEquipmentUser" resultType="com.th.system.vo.SysProjectUserVo" parameterType="java.lang.String">
+		select u.userId,u.userName,u.phoneNumber,
+    	u.mailbox,u.isMailbox,u.isNote,u.noDisturbing,
+    	u.profilePicture,p.projectName,y.measureName,
+     	s.modelName,e.number,e.equipmentName,
+     	e.modelId,y.measureId from 
+		sys_equipment as e
+		inner join sys_model as s
+		on s.modelId = e.modelId
+		join sys_measure as y
+		on y.modelId = s.modelId
+		inner join sys_project_model as m
+		on m.modelId = e.modelId
+		join sys_project as p
+		on p.projectId = m.projectId
+		inner join sys_user as u
+		on u.userId = p.userId
+		and e.equipmentId = #{equipmentId}
+		group by(u.userId)
+		LIMIT 0,1
+  </select>
+  
+<!--   <select id="findDTUUser" resultType="com.th.system.vo.SysProjectUserVo" parameterType="java.lang.String">
+		select u.userId,u.userName,u.phoneNumber,
+    	u.mailbox,u.isMailbox,u.isNote,u.noDisturbing,
+    	u.profilePicture,p.projectName,y.measureName,
+     	s.modelName,e.number,e.equipmentName,
+     	e.modelId,y.measureId from 
+		sys_equipment as e
+		inner join sys_model as s
+		on s.modelId = e.modelId
+		join sys_measure as y
+		on y.modelId = s.modelId
+		inner join sys_project_model as m
+		on m.modelId = e.modelId
+		join sys_project as p
+		on p.projectId = m.projectId
+		inner join sys_user as u
+		on u.userId = p.userId
+		and e.equipmentId = #{equipmentId}
+		group by(u.userId)
+  </select> -->
+  
+</mapper>

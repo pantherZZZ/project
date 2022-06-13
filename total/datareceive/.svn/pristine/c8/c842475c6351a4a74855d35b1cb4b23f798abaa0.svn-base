@@ -1,0 +1,33 @@
+package com.yy.redis;
+
+/**
+ * @auther:
+ * @date: 17:50 2018/8/28
+ * @Description: 此类用于区分redis的库
+ */
+public class RedisConstants {
+
+	public static final String spilt = ":";
+	public static final Integer datebase0 = 0;//集中管控待通电缓存临时数据库（未发送）
+	public static final Integer datebase1 = 1;//集中管控开启设备红外指令缓存
+	public static final Integer datebase2 = 2;//集中控制断电指令缓存数据库（未发送）
+	public static final Integer datebase3 = 3;//集中管控关闭设备红外指令缓存
+	public static final Integer datebase4 = 4;//集中管控关闭设备电源指令缓存
+	public static final Integer datebase5 = 5;//集中管控远程通电已发送待反馈缓存
+	public static final Integer datebase6 = 6;//集中管控远程红外开机指令已发送缓存
+	public static final Integer datebase7 = 7;//集中管控远程断电已发送缓存
+	public static final Integer datebase8 = 8;//集中管控远程红外关机已发送缓存
+	public static final Integer datebase9 = 9;//集中管控远程红外断电已发送缓存
+	public static final Integer datebase10 = 10;//智能门锁指纹下发后半条指令
+
+	// redis标识
+	public static final String redis_proflag = "roomManagerSystem";// 项目标识
+	public static final String redis_tokenback = redis_proflag + spilt + "tokenback";// 用户后台token
+	public static final String redis_tokenapp = redis_proflag + spilt + "tokenapp";// 用户后台token
+	public static final String redis_openfrom = redis_proflag + spilt + "openforminfo";// openidformid标识
+	public static final int times=3600*24*7-3600;//保存openid 有效时间
+
+	public RedisConstants() {
+
+	}
+}

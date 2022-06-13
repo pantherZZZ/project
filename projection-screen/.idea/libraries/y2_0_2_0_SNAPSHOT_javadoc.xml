@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="y2-0.2.0-SNAPSHOT-javadoc">
-    <CLASSES />
-    <JAVADOC>
-      <root url="jar://$PROJECT_DIR$/src/main/resources/lib/y2-0.2.0-SNAPSHOT-javadoc.jar!/" />
-    </JAVADOC>
-    <SOURCES />
-  </library>
-</component>

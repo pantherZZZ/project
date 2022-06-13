@@ -1,0 +1,213 @@
+package com.yy.common.constant;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+public class MyConstants {
+	
+	public static final String productsServerUrl = "http://127.0.0.1:8081/WX/";// !!!!!!!!!http://218.2.234.170:23581/products
+	public static final String updateDeviceStateDeviceUrl = "/updateDeviceState";//更新用户设备状态
+	public static final String getDeviceUnitUrl = "/getDeviceUnit";//获取设备所属单位
+	public static final String receciveRedCodeUrl = "/getAirMatchInfo";//更新用户设备状态
+	public static final String urlbackUrl = "/getArcCode";//更新用户设备状态
+	public static final String registUrl = "/registEqu";//更新用户设备状态
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	// 上层服务器信息
+	public static String uploaddata_serverIP;// !http://127.0.0.1
+	public static String uploaddata_serverPORT;// ！ 8084 8995
+	public static String uploaddata_pro;// ！http://127.0.0.1
+	public static String application_flag; // ！95 97 kt
+	public static String _1_udp_serverPORT; //
+	public static StringBuffer uploaddata_remoteOpen_server = new StringBuffer();// 远程开锁申请
+	public static final String uploaddata_remoteOpen = "remoteOpen";
+	public static StringBuffer uploaddata_equStateChange_server = new StringBuffer();// 设备状态变化上报
+	public static final String uploaddata_equStateChange = "equStateChange";
+	public static StringBuffer uploaddata_equHart_server = new StringBuffer();// 设备下心跳数据上报
+	public static final String uploaddata_equHart = "equHart";
+	public static StringBuffer uploaddata_equAlarm_server = new StringBuffer();// 报警数据上传
+	public static final String uploaddata_equAlarm = "equAlarm";
+	public static StringBuffer uploaddata_photo_server = new StringBuffer();// 照片数据上传
+	public static final String uploaddata_photo_method = "smartequ/udpReceive_photo_T";
+	public static final String uploaddata_onlineuser_method = "smartequ/onlineuser_app_T";
+
+	public static String TEMPFILEPATH;
+	public static String fileServerUrl;
+	public static String fileServerKey;
+	public static final int HTTPConnectTimeout = 5000;
+	public static final String password = "111111"; // 初始密码
+	public static final int limit = 10; // 默认PageSize
+	// 框架
+	public static final String codeid_deptype = "4028e3fb4cc574fa014cc577fa120001";// 字典值部门类型
+	public static final String superdepid = "00000000000000000000000000000000";
+	public static Properties PROPERTY;
+
+	public static String getProperty(String key) {
+		return (String) PROPERTY.get(key);
+	}
+
+	public static final int packagesize_nb = 256;// nb升级分包大小
+	public static final int packagesize_photo = 128;// 照片分包大小
+	// !!!!!!!!!!!!!!!!IOT平台接入的话注意修改CoapContants!!!!!!!!!!!!!!!
+	public static final boolean immediatelySendOpenCmd = true;// 立即发送开锁,但是最好判断终端发送消息来的40秒内
+	public static final int immediatelySendOpenCmd_waitsec = 40;// 距离上一个下发信号的最大时间，单位：秒
+	// 业务逻辑
+	public static final String application_name = "u1";// 门柜及门磁
+	public static final String application_name_2 = "u2";// 井盖
+
+	public static final int setnb_ip = 0xC1;// 服务器IP
+	public static final int setnb_port = 0xC2;// 服务器PORT
+	public static final int setnb_connect = 0xC3;// 心跳间隔时间
+	public static final int setnb_password = 0xC4;// 蓝牙开锁密码
+	public static final int equPowerOn = 0x81;// 上电包
+	public static final int equSim = 0x91;// sim卡号查询
+	public static final int equId_query = 0xf1;// 上报ID信息查询包,申请CIMI号查询
+	// 1: 门磁 2:井盖
+
+	public static final int _1_equState_check = 0x41;// 检测设备状态
+	public static final int _1_equState_reponse = 0x21;// 应答设备状态
+	public static final int _1_equConnect_check = 0x51;// 心跳状态
+	public static final int _1_equfix_check = 0x52;// 心跳状态
+	public static final int _1_equConnect_reponse = 0x21;// 应答心跳状态
+	public static final int _1_equConnect_reponse_fix = 0x2f;// 应答心跳状态,维护
+	public static final int _1_equState_open = 0xf1;// 锁开门开
+	public static final int _1_equState_open_lock = 0xe1;// 锁关门开
+	public static final int _1_equState_close = 0xf0;// 锁开门关
+	public static final int _1_equState_close_lock = 0xe0;// 锁关门关
+	public static final int _1_equRemote_wait = 0x71;// 远程开锁等待审核
+	public static final int _1_equRemoteOpen_deal = 0x31;// 远程打开设备
+	public static final int _1_demo_read = 0x1B;// 读取信息 demo
+	public static final int _1_demo_write = 0x9B;// 写入信息 demo
+	public static final int _1_equalarm_other = 0x31;// 其他报警信息 烟感水浸
+	public static boolean _1_haserror = false;
+	// 2: 10010:井盖
+	public static final int _2_equStatus_sleep = 0x10;// 睡眠状态
+	public static final int _2_equStatus_calibration = 0x20;// 标定状态
+	public static final int _2_equStatus_monitor = 0x30;// 监控状态
+	public static final int _2_equStatus_isolat = 0x40;// 隔离状态
+	public static final int _2_equStatus_waitResult = 0x50;// 暂态状态
+	public static final int _2_equState_check = 0x41;// 上报监控
+	public static final int _2_equConnect_check = 0x51;// 心跳状态
+	public static final int _2_equState_reponse = 0x21;// 应答设备状态 比较多，由app端维护
+	public static final int _2_equState_fix = 0x11; // 设置包
+
+	public static final int _2_equState_check_alarm = 0x80;// 开盖，是否报警由smarklock动态判断
+	public static final int _2_equState_check_noalarm = 0xff;// 关盖
+	public static final int _2_equState_reponse_intoCalibration = 0x80;// 命令终端转入标定态
+	public static final int _2_equState_reponse_continue = 0x51;// 继续当前监控状态，结束当前通讯过程
+	public static final int _2_equState_reponse_repeatValue = 0x91;// 重测实时值上传
+	public static final int _2_equState_reponse_intoCalibrationWithBD = 0xA0;// 转入隔离状态，并将服务器认定的标定值记录到终端的
+	public static final int _2_equState_reponse_intoIsolat = 0xA2;// 转入隔离状态，不保存下发的标定值数据，仍用原标定值做为判据。
+	public static final int _2_equState_reponse_intoWait = 0xB0;// 命令终端转入等待结果状态
+	public static final int _2_equState_reponse_saveCalibration = 0xC0;// 井盖标定值满足要求，关盖成功
+	public static final int _2_equState_reponse_intoMonitorWithBD = 0x90;// 转入监控状态，并将服务器认定的标定值记录到终端
+	public static final int _2_equState_reponse_intoMonitor = 0x92;// 转入监控状态，不保存下发的标定值数据，仍用原标定值做为判据
+	public static final int _2_equState_reponse_request = 0x61;// 请求返回结果消息包
+	public static final String _2_equState_reponse_request_str = "61";// 请求返回包前缀
+	public static final int photo_61 = 0x61;// 开始接收图片任务
+	public static final int photo_62 = 0x62;// 图片发送任务F
+	public static final int lean_53 = 0x53;// 倾斜报警（电杆）
+	public static final int _2_wait_second = 20;// 等待时间，单位：秒
+	public static boolean _2_haserror = false;
+	public static Map<Integer, String> _2_equState_name = new HashMap<Integer, String>();
+	public static Map<String, String> iot_wrong_equid = new HashMap<String, String>();// 山西太原与北京联通编码冲突
+	// redis标识
+	static String redis_proflag;// 项目标识
+	public static String equ_IP_PORT = "equ:ip:port:";
+	public static String equ_DEVICEID = "equ:deviceid:";// IOT平台设备id
+	public static String redis_equsets = "equsets:";// 待设置的设备集合
+	public static String redis_equupdates = "equupdates:";// 待升级的设备集合
+	public static String redis_remoteequ = "remoteequ:";// 远程打开缓存
+	public static String redis_setTemperature = "settemperatureequ:";// 远程设置温度demo
+	public static String redis_nbUpdate_package = "nbUpdate:package:";// nb升级包+包号。如nbUpdate:package:1第一个升级包
+	public static String redis_nbUpdate_info = "nbUpdate:info:";// nb升级包信息，内容：数据包数量+厂家编号+型号+升级版本号，以@@隔开
+	public static String redis_equver = "equver:";// 远程升级版本变化参考，避免无限循环升级
+	public static String redis_equmsgid = "equmsgid:";// 消息唯一标识
+	public static final int equmsgid_cacheSeconds = 60 * 2;// 缓存2分钟
+	public static final int nbUpdate_cacheSeconds = 3600 * 72;// 缓存72小时
+	public static final int equsets_cacheSeconds = 3600 * 30;// 缓存30小时
+	public static final int equ_IP_PORT_cacheSeconds = 600;
+	public static final int equ_DEVICEID_cacheSeconds = 600;
+	public static final int remoteequ_cacheSeconds = 20 * 60;// 远程开锁时限20分钟
+	public static final int _1_nb_updating = 0x11;// nb升级中，设备对服务的回包
+	public static final int _1_nb_update_end = 0x13;// nb升级成功后，设备对服务的回包
+	public static final int _1_nb_update_sending = 0x10;// nb升级中发送的数据包
+	public static final int _1_nb_update_sendEnd = 0x12;// nb升级成功后发送的数据包
+	public static final int nb_update_cmd = 0x7e;// nb升级帧头（省电信版）
+	public static final int update_flag01 = 0x01;// 准备升级
+	public static final int update_flag02 = 0x02;// 发送数据包
+	public static final int update_flag03 = 0x03;// 下载完成
+	public static final int update_flag04 = 0x04;// 升级完成
+
+	public static String redis_remoting = "remoting:";// 设备远程通讯中,一拖二的id占用版会有点问题，因为2个锁的equid是不一样的
+	public static int redis_remoting_cacheSeconds = 40;//
+	public static final String string_split = "@#@";// 字符串之间分隔符
+	public static String redis_nbPhoto_package = "nbPhoto:package:";// nb照片包+设备id+包号
+	public static String redis_nbPhoto_info = "nbPhoto:info:";// 每个设备的nb升级包信息，内容：数据包数量，以@@隔开，暂时只一个
+	public static final int redis_nbPhoto_cacheSeconds = 60 * 10;
+	public static String redis_sendmoretimes = "sendmoretimes:";// 费电用，周期到一定次数旧终止，如果nb会回发，则作为周期时长判断，每24小时费电一次
+	public static String redis_equtype = "equtype:";// 设备类型，主要是去掉hex开头判断设备类型的问题
+	static {
+
+	}
+
+	public static void fillToMyConstants(Properties props) {
+		if (props != null) {
+			String fileServerUrl = props.get("fileServerUrl").toString();
+			String application_flag = props.get("application_flag").toString();
+			String _1_udp_serverPORT = props.get("_1_udp_serverPORT").toString();
+			String uploaddata_serverIP = props.get("uploaddata_serverIP").toString();
+			String uploaddata_serverPORT = props.get("uploaddata_serverPORT").toString();
+			String uploaddata_pro = props.get("uploaddata_pro").toString();
+			MyConstants.fileServerUrl = fileServerUrl;
+			MyConstants.application_flag = application_flag;
+			MyConstants._1_udp_serverPORT = _1_udp_serverPORT;
+			MyConstants.uploaddata_serverIP = uploaddata_serverIP;
+			MyConstants.uploaddata_serverPORT = uploaddata_serverPORT;
+			MyConstants.uploaddata_pro = uploaddata_pro;
+		}
+	}
+
+	public static void initExt() {
+		redis_proflag = application_flag + ":";
+		equ_IP_PORT = redis_proflag + equ_IP_PORT;
+		equ_DEVICEID = redis_proflag + equ_DEVICEID;
+		redis_equsets = redis_proflag + redis_equsets;
+		redis_equupdates = redis_proflag + redis_equupdates;
+		redis_remoteequ = redis_proflag + redis_remoteequ;
+		redis_setTemperature = redis_proflag + redis_setTemperature;
+		redis_remoting = redis_proflag + redis_remoting;
+		redis_nbUpdate_package = redis_proflag + redis_nbUpdate_package;
+		redis_nbUpdate_info = redis_proflag + redis_nbUpdate_info;
+		redis_nbPhoto_package = redis_proflag + redis_nbPhoto_package;
+		redis_nbPhoto_info = redis_proflag + redis_nbPhoto_info;
+		redis_sendmoretimes = redis_proflag + redis_sendmoretimes;
+		redis_equver = redis_proflag + redis_equver;
+		redis_equmsgid = redis_proflag + redis_equmsgid;
+		uploaddata_remoteOpen_server.append(MyConstants.uploaddata_serverIP).append(":")
+				.append(MyConstants.uploaddata_serverPORT).append("/").append(MyConstants.uploaddata_pro).append("/")
+				.append(MyConstants.uploaddata_remoteOpen);
+		uploaddata_equStateChange_server.append(MyConstants.uploaddata_serverIP).append(":")
+				.append(MyConstants.uploaddata_serverPORT).append("/").append(MyConstants.uploaddata_pro).append("/")
+				.append(MyConstants.uploaddata_equStateChange);
+		uploaddata_equHart_server.append(MyConstants.uploaddata_serverIP).append(":")
+				.append(MyConstants.uploaddata_serverPORT).append("/").append(MyConstants.uploaddata_pro).append("/")
+				.append(MyConstants.uploaddata_equHart);
+		uploaddata_equAlarm_server.append(MyConstants.uploaddata_serverIP).append(":")
+				.append(MyConstants.uploaddata_serverPORT).append("/").append(MyConstants.uploaddata_pro).append("/")
+				.append(MyConstants.uploaddata_equAlarm);
+		uploaddata_photo_server.append(MyConstants.uploaddata_serverIP).append(":")
+				.append(MyConstants.uploaddata_serverPORT).append("/").append(MyConstants.uploaddata_pro).append("/")
+				.append(MyConstants.uploaddata_photo_method);
+	}
+	
+	
+}

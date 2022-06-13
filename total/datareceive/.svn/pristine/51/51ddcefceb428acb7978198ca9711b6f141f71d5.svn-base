@@ -1,0 +1,18 @@
+package com.yy.data.udp;
+
+import com.yy.data.model.UdpRecord;
+
+public class UdpRecordsThread implements Runnable {
+	UdpRecord ob;
+	UdpService udpService;
+
+	public UdpRecordsThread(UdpRecord ob, UdpService udpService) {
+		this.ob = ob;
+		this.udpService = udpService;
+	}
+
+	@Override
+	public void run() {
+		// udpService.insertUdp(ob);
+	}
+}

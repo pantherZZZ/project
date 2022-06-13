@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysMeasureMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysMeasure">
+    <id column="measureId" property="measureId" />
+    <result column="measureName" property="measureName" />
+    <result column="factorId" property="factorId" />
+    <result column="dataSource" property="dataSource" />
+    <result column="equipmentId" property="equipmentId" />
+    <result column="pictureSite" property="pictureSite" />
+    <result column="modelId" property="modelId" />
+    <result column="label" property="label" />
+    <result column="show" property="show" />
+  </resultMap>
+
+  <sql id="Base_List">
+    measureId, measureName,factorId,dataSource,equipmentId,pictureSite,modelId,label
+  </sql>
+  
+  <select id="showMeasureId" resultType="java.lang.String">
+		select measureId
+		from sys_measure
+		where factorId = #{factorId}
+		and measureName = #{measureName}
+		and dataSource = #{dataSource}
+		and equipmentId = #{equipmentId}
+		and modelId = #{modelId}
+		and label = #{label}
+		and pictureSite = #{pictureSite}
+		LIMIT 0,1
+  </select>
+  
+  <select id="findByfactorId" resultMap="BaseMap">
+		select m.measureId,m.measureName 
+		from sys_factor as f
+		inner join sys_measure as m
+		on f.factorId = m.factorId
+		inner join sys_project_model as s
+		on s.modelId = m.modelId
+		inner join sys_project as p
+		on s.projectId = s.projectId
+		and equipmentId is not null
+		and f.factorId = #{factorId}
+		<if test="userid != null">
+			and p.userId = #{userid}
+		</if>
+		group by(m.measureId)
+  </select>
+  
+  <select id="findByMeasurePro" resultType="java.lang.String">
+		select d.data
+		from sys_measure as m
+		join sys_data as d
+		on m.equipmentId = d.equipmentId
+		and m.measureId = #{measureId}
+		and d.time like concat('%',#{time},'%')
+		and d.`hour` = #{hour}
+		LIMIT 0,1
+  </select>
+  
+  <select id="findByUserId" resultMap="BaseMap">
+		select s.measureId,s.measureName from 
+		sys_project as p
+		inner join sys_project_model as m
+		on p.projectId = m.projectId
+		inner join sys_measure as s
+		on s.modelId = m.modelId
+		and p.`show` != "1"
+		<if test="_parameter != null">
+			and p.userId = #{userId}
+		</if>
+		group by(s.measureId)
+  </select>
+  
+   <select id="findByModelId" resultType="com.th.system.vo.SysMeasureVo">
+			select m.measureId, m.measureName, m.factorId,m.dataSource,
+		m.equipmentId,m.pictureSite,m.modelId,f.factorName,e.equipmentName from 
+		sys_measure as m
+		inner join sys_factor as f
+		on f.factorId = m.factorId
+		inner join sys_equipment as e
+		on e.equipmentId = m.equipmentId
+		and m.modelId = #{modelId}
+		<if test="measureName != null">
+			and m.measureName like concat('%',#{measureName},'%')
+		</if>
+		<if test="measureName != null">
+			and m.measureName like concat('%',#{measureName},'%')
+		</if>
+		LIMIT #{page},#{limit}
+  </select>
+  
+   <select id="findByMeasure" resultType="com.th.system.vo.SysMeasureVo">
+			select m.measureId, m.measureName, m.factorId,m.dataSource,
+		m.equipmentId,m.pictureSite,m.modelId,f.factorName,e.equipmentName from 
+		sys_measure as m
+		inner join sys_factor as f
+		on f.factorId = m.factorId
+		inner join sys_equipment as e
+		on e.equipmentId = m.equipmentId
+		and m.measureId = #{measureId}
+  </select>
+  
+   <delete id="dalMeasure">
+  	DELETE from sys_measure
+  	where measureId = #{measureId}
+  </delete>
+  
+  <update id="updateMeasure" parameterType="com.th.system.po.SysMeasure">
+        update sys_measure
+        <set>
+            <if test="measureName != null">`measureName` = #{measureName},</if>
+            <if test="factorId != null">`factorId` = #{factorId},</if>
+            <if test="dataSource != null">`dataSource` = #{dataSource},</if>
+            <if test="equipmentId != null">`equipmentId` = #{equipmentId},</if>
+            <if test="pictureSite != null">`pictureSite` = #{pictureSite},</if>
+            <if test="modelId != null">`modelId` = #{modelId},</if>
+            <if test="label != null">`label` = #{label},</if>
+            <if test="show != null">`show` = #{show}</if>
+            <if test="modelId != null">`modelId` = #{modelId}</if>
+        </set>
+        where measureId = #{measureId}
+  </update>
+  
+  <insert id="insertMeasure" parameterType="com.th.system.po.SysMeasure">
+    insert into sys_measure
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="measureName != null">
+        measureName,
+      </if>
+       <if test="factorId != null">
+        factorId,
+      </if>
+       <if test="dataSource != null">
+        dataSource,
+      </if>
+       <if test="equipmentId != null">
+        equipmentId,
+      </if>
+       <if test="pictureSite != null">
+        pictureSite,
+      </if>
+       <if test="modelId != null">
+        modelId,
+      </if>
+       <if test="label != null">
+        label,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="measureName != null">
+        #{measureName},
+      </if> 
+      <if test="factorId != null">
+        #{factorId},
+      </if>
+      <if test="dataSource != null">
+        #{dataSource},
+      </if>
+      <if test="equipmentId != null">
+        #{equipmentId},
+      </if> 
+      <if test="pictureSite != null">
+        #{pictureSite},
+      </if>
+      <if test="modelId != null">
+        #{modelId},
+      </if>
+       <if test="label != null">
+        #{label},
+      </if>
+    </trim>
+  </insert>
+
+</mapper>

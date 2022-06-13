@@ -1,0 +1,200 @@
+package com.yy.data.answer;
+
+import java.io.BufferedReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.tomcat.util.codec.binary.Base64;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.yy.common.constant.MyConstants;
+import com.yy.common.utils.DateUtil;
+import com.yy.common.utils.JedisUtils;
+import com.yy.common.utils.JsonUtil;
+import com.yy.common.utils.Log4jUtil;
+import com.yy.common.utils.StringUtils;
+import com.yy.data.coap.CoapUtils;
+import com.yy.data.model.UdpRecord;
+import com.yy.data.udp.MessageData;
+import com.yy.data.udp.UdpAnalysisThread;
+import com.yy.data.udp.UdpRecordsThread;
+import com.yy.data.udp.UdpService;
+
+@Controller
+@RequestMapping(value = "/callBack_T")
+public class CallBack {
+	@Resource
+	private UdpService udpService;
+	// 维护一个本类的静态变量
+	public static CallBack callBack;
+
+	@PostConstruct
+	public void init() {
+		callBack = this;
+		callBack.udpService = this.udpService;
+	}
+
+	@ResponseBody
+	@RequestMapping
+	public String init(HttpServletRequest req) throws Exception {
+		BufferedReader br = req.getReader();
+		String str, wholeStr = "";
+		while ((str = br.readLine()) != null) {
+			wholeStr += str;
+		}
+		System.out.println(wholeStr);
+		if (StringUtils.isBlank(wholeStr)) {
+			return "1";
+		}
+		Map bodydata = JsonUtil.readMap(wholeStr);
+		String deviceId = bodydata.get("deviceId") + "";
+		String value = ((Map) ((Map) bodydata.get("service")).get("data")).get("value") + "";
+		byte[] orgdata = new byte[300];
+		if (value != null) {
+			Log4jUtil.getLogger(getClass()).info("!!!!!!!iot！！！！！收到的value:" + value);
+			// orgdata = Convert.str2_2Bytes(value);
+			orgdata = base64String2ByteFun(value);
+		}
+		Map<String, Object> analysisInfo = new MessageData().reveive(orgdata);
+		if (analysisInfo == null) {
+			Map datamap = new HashMap();
+			datamap.put("value", "ff");
+			// 如果命令无关业务的话
+			// 应答消息
+			// 没有解析到equid只能走默认
+			CoapUtils ob = new CoapUtils();
+			// data转为字符串-->command
+			byte[] answers = new byte[2];
+			answers[0] = (byte) 0x99;
+			answers[1] = (byte) 0xF1;
+			String hex_message_answer = byte2Base64StringFun(answers);
+			Map map = new HashMap();
+			map.put("value", hex_message_answer);
+			ob.postDeviceCommand(deviceId, JsonUtil.writeAsString(map)); // "{\"value\":\"100\"}"
+			// ob.logoutAuthToken();
+
+			return JsonUtil.writeAsString(datamap);
+		} else {
+			if (analysisInfo.get("ignore") != null) {// 说明消息已经被解析过
+				return "1";
+			}
+		}
+		boolean validReceive = false;
+		String equid = null;
+		String chargecent = null;
+		String state = null;
+		String hex_message = null;
+		String imei = null;// imei
+		String currentTime = DateUtil.getCurrentDateTime_SSS();
+		String message = analysisInfo.get("messageInfo").toString();
+		if (analysisInfo != null && "1".equals(analysisInfo.get("result"))) {
+			// 离线消息id缓存,nb上来的41包就不需要发到后台服务了，这样41包有可能不回复了
+			if (analysisInfo.get("msgid") != null) {
+				JedisUtils.set(MyConstants.redis_equmsgid + equid, currentTime, MyConstants.equmsgid_cacheSeconds);
+
+			}
+			validReceive = true;
+			if (analysisInfo.get("equid") != null)
+				equid = analysisInfo.get("equid").toString();
+			if (analysisInfo.get("chargecent") != null)
+				chargecent = analysisInfo.get("chargecent").toString();
+			if (analysisInfo.get("state") != null)
+				state = analysisInfo.get("state").toString();
+			if (analysisInfo.get("imei") != null)
+				imei = analysisInfo.get("imei").toString();
+			hex_message = analysisInfo.get("hex_message").toString();
+			if (equid == null) {
+				System.out.println("Udp_1异常设备id为空" + hex_message);
+			}
+			analysisInfo.put("deviceid", deviceId);
+//			analysisInfo.put("iotconfs", "1");// !!!!!!,第一迁移后的ip
+			// analysisInfo.put("port", receivePacket.getPort() + "");
+			if (analysisInfo.get("nosubmit") != null) {
+				// 不上报到业务系统中
+				System.out.println(hex_message);
+			} else {
+				// 对接业务，刷新更新标识 A
+				new Thread(new UdpAnalysisThread(currentTime.toString(), analysisInfo, callBack.udpService)).start();
+			}
+
+		}
+		// 用于开锁的交互，等待包会4秒延迟，导致下面无效,要在等待包中继续加入下面方法
+		if (JedisUtils.get(MyConstants.redis_remoting + equid) == null) {
+			JedisUtils.set(MyConstants.redis_remoting + equid, "0", MyConstants.redis_remoting_cacheSeconds);
+		} else {
+			JedisUtils.expire(MyConstants.redis_remoting + equid, MyConstants.redis_remoting_cacheSeconds);
+		}
+		UdpRecord record = new UdpRecord();
+		record.setAddress("");
+		record.setChargecent(chargecent);
+		record.setEquid(equid);
+		record.setHex_message(hex_message);
+		record.setIsanswer("0");
+		record.setMessage(message);
+		record.setPort("");
+		record.setSendertime(DateUtil.getCurrentDateTime_SSS());
+		record.setState(state);
+		record.setType("1");
+		new Thread(new UdpRecordsThread(record, callBack.udpService)).start();
+		/* 从客户端输入转化为byte */
+		List<byte[]> date_batch = new ArrayList<byte[]>();
+		byte[] data = null;
+		if (validReceive) {
+
+			if (analysisInfo.get("answer") != null) {
+				data = (byte[]) analysisInfo.get("answer");
+				if (analysisInfo.get("hex_message_answer") != null) {// 保存上发信息到记录
+					String hex_message_answer = analysisInfo.get("hex_message_answer") + "";
+					record = new UdpRecord();
+					record.setAddress("");
+					record.setEquid(equid);
+					record.setHex_message(hex_message_answer);
+					record.setIsanswer("1");
+					record.setPort("");
+					record.setSendertime(currentTime.toString());
+					record.setType("1");
+					new Thread(new UdpRecordsThread(record, callBack.udpService)).start();
+				}
+			}
+			// 将终端的deviceid保存
+			JedisUtils.set(MyConstants.equ_DEVICEID + equid, deviceId, MyConstants.equ_DEVICEID_cacheSeconds);
+		}
+		if (data != null) {
+			// 应答消息
+			CoapUtils ob = new CoapUtils();// 第二个参数为迁移后第一次
+			// data转为字符串-->command
+			String hex_message_answer = byte2Base64StringFun(data);
+			//
+			// String hex_message_answer = MessageData.getHexString(data,
+			// data.length);
+
+			// if (hex_message_answer != null) {
+			// hex_message_answer = hex_message_answer.toUpperCase();
+			// }
+			Map map = new HashMap();
+			map.put("value", hex_message_answer);
+			ob.postDeviceCommand(deviceId, JsonUtil.writeAsString(map)); // "{\"value\":\"100\"}"
+			// ob.logoutAuthToken();
+		}
+		return "1";
+
+	}
+
+	// base64字符串转byte[]
+	public static byte[] base64String2ByteFun(String base64Str) {
+		return Base64.decodeBase64(base64Str);
+	}
+
+	// byte[]转base64
+	public static String byte2Base64StringFun(byte[] b) {
+		return Base64.encodeBase64String(b);
+	}
+}

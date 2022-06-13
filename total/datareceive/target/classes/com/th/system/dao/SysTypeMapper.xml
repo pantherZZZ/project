@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.th.system.dao.SysTypeMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysType">
+    <id column="typeId" property="typeId" />
+    <result column="typeName" property="typeName" />
+    <result column="plantId" property="plantId" />
+  </resultMap>
+ 
+  <sql id="Base_List">
+    typeId, typeName,plantId
+  </sql>
+  
+  <insert id="insertType" parameterType="com.th.system.po.SysType">
+    insert into sys_type
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="typeName != null">
+        typeName,
+      </if>
+      <if test="plantId != null">
+        plantId,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="typeName != null">
+        #{typeName,jdbcType=VARCHAR},
+      </if>
+      <if test="plantId != null">
+        #{plantId,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  
+     <select id="findTypeAll" resultMap="BaseMap">
+		select <include refid="Base_List" /> from sys_type
+		where plantId = #{plantId}
+   </select>
+
+</mapper>

@@ -1,0 +1,123 @@
+package com.yy.data.answer;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.ServletInputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.DatatypeConverter;
+
+import org.apache.commons.codec.Decoder;
+import org.apache.commons.codec.binary.Base64;
+import sun.misc.BASE64Decoder; 
+import org.apache.commons.lang.CharEncoding;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.client.RestTemplate;
+
+import com.huawei.iotplatform.client.NorthApiException;
+import com.yy.common.constant.MyConstants;
+import com.yy.common.utils.DateUtil;
+import com.yy.common.utils.JsonUtil;
+import com.yy.data.model.DeviceDataInfo;
+import com.yy.data.service.DeviceDataInfoService;
+import com.yy.redis.RedisConstants;
+import com.yy.redis.utils.RedisUtil;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+@Controller
+@RequestMapping(value = "/student")
+public class StudentAnswer {
+	
+	@Autowired
+	private RedisUtil redisUtil;
+		
+	/**
+	 * 设备数据接收
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/setAppraise_bzr")
+	public String setAppraise_bzr(String studentid,String teacherid,String appraiseid,String appraiseDimensionId) throws Exception {
+		String redisId=studentid+"@"+teacherid+"@"+appraiseid;
+		String appraiseTime = DateUtil.getCurrentDateTime();
+		redisUtil.set(RedisConstants.datebase0,redisId,appraiseTime+"#"+appraiseDimensionId);
+		return "1";
+		
+	}
+	
+	
+	@ResponseBody
+	@RequestMapping(value = "/setAppraise_bx")
+	public String setAppraise_bx(String studentid,String teacherIds,String appraiseid,String appraiseDimensionId,String coursesInfoId) throws Exception {
+		String redisId=studentid+"@"+coursesInfoId+"@"+appraiseid;
+		String appraiseTime = DateUtil.getCurrentDateTime();
+		redisUtil.set(RedisConstants.datebase1,redisId,appraiseTime+"#"+teacherIds+"#"+appraiseDimensionId);
+		return "1";
+		
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/setAppraise_xx")
+	public String setAppraise_xx(String studentid,String appraiseid,String appraiseDimensionId) throws Exception {
+		String redisId=studentid+"@"+appraiseid;
+		String appraiseTime = DateUtil.getCurrentDateTime();
+		redisUtil.set(RedisConstants.datebase2,redisId,appraiseTime+"#"+appraiseDimensionId);
+		return "1";
+		
+	}
+	
+	@ResponseBody
+	@RequestMapping(value = "/setAppraise_ty")
+	public String setAppraise_ty(String studentid,String appraiseid,String appraiseDimensionId) throws Exception {
+		String redisId=studentid+"@"+appraiseid;
+		String appraiseTime = DateUtil.getCurrentDateTime();
+		redisUtil.set(RedisConstants.datebase2,redisId,appraiseTime+"#"+appraiseDimensionId);
+		return "1";
+	}
+		
+}

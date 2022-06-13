@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysEquipmentTotalMapper">
+    <select id="findAllDtu" resultType="com.th.system.po.SysFac">
+       SELECT p.plant_id,p.plant_name FROM sys_dtu_plant p
+       left join sys_equipment_total t on p.plant_id=t.plant_id
+       where p.state=2
+   </select>
+
+    <select id="findAllProduct" resultType="com.th.system.po.SysPro">
+        SELECT ty.type_id,ty.type_name
+        FROM sys_dtu_type ty LEFT JOIN  sys_equipment_total t
+        ON t.type_id=ty.type_id
+        WHERE
+        <if test="plantId != null and plantId != ''">
+            t.plant_id = #{plantId}
+        </if>
+        and ty.state=2
+    </select>
+
+    <select id="findAllModel" resultType="com.th.system.po.SysMod">
+        SELECT m.modelNumber_id,m.modelNumber_name
+        FROM sys_dtu_modelNumber m LEFT JOIN  sys_equipment_total t
+        ON t.modelNumber_id=m.modelNumber_id
+        WHERE
+        <if test="typeId != null and typeId != ''">
+            t.type_id = #{typeId}
+        </if>
+        and m.state=2
+    </select>
+</mapper>

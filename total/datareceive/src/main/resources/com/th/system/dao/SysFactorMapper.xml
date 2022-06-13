@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysFactorMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysFactor">
+    <id column="factorId" property="factorId" />
+    <result column="factorName" property="factorName" />
+    <result column="isPrivate" property="isPrivate" />
+    <result column="unitsId" property="unitsId" />
+  </resultMap>
+	
+  <sql id="Base_List">
+    factorId, factorName, isPrivate,unitsId
+  </sql>
+  
+   <sql id="Base_ListPro">
+    f.factorId,f.factorName,f.isPrivate,f.unitsId
+  </sql>
+  
+   <select id="findAll" resultMap="BaseMap">
+		select <include refid="Base_List" /> from sys_factor
+   </select>
+  
+   <select id="findAllPro" resultMap="BaseMap">
+		select <include refid="Base_ListPro" /> from
+		sys_factor as f
+		inner join sys_measure as m
+		on f.factorId = m.factorId
+		inner join sys_project_model as s
+		on s.modelId = m.modelId
+		inner join sys_project as p
+		on s.projectId = s.projectId
+		<if test="userid != null">
+			and p.userId = #{userid}
+		</if>
+		group by(f.factorId)
+   </select>
+  
+  <select id="findByModelId" resultMap="BaseMap">
+		select f.factorId, f.factorName, f.isPrivate,f.unitsId from
+		sys_factor as f
+		inner join sys_model_detectionType as d
+		on f.factorId = d.detectionTypeId
+		and d.modelId = #{modelId}
+   </select>
+  
+   <insert id="insertFactor">
+    insert into sys_factor
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="factorName != null">
+        factorName,
+      </if>
+      <if test="isPrivate != null">
+        isPrivate,
+      </if>
+      <if test="unitsId != null">
+        unitsId,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="factorName != null">
+        #{factorName},
+      </if>
+      <if test="isPrivate != null">
+        #{isPrivate},
+      </if>
+       <if test="unitsId != null">
+        #{unitsId},
+      </if>
+    </trim>
+  </insert>
+
+</mapper>

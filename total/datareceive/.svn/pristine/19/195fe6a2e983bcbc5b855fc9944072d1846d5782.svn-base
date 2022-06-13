@@ -1,0 +1,67 @@
+package com.yy.data.model;
+
+
+public class DeviceDataInfo {
+    private String datainfoid;//记录id
+
+    private String deviceid;//设备id
+    
+    private String isSend;//0收  1发
+    
+    private String datatime;//记录时间
+
+    private String hisdata;//原始数据
+    
+    private String datacontent;//解析后数据
+
+	public String getDatainfoid() {
+		return datainfoid;
+	}
+
+	public void setDatainfoid(String datainfoid) {
+		this.datainfoid = datainfoid;
+	}
+
+	public String getDeviceid() {
+		return deviceid;
+	}
+
+	public void setDeviceid(String deviceid) {
+		this.deviceid = deviceid;
+	}
+
+	public String getDatatime() {
+		return datatime;
+	}
+
+	public void setDatatime(String datatime) {
+		this.datatime = datatime;
+	}
+
+	public String getDatacontent() {
+		return datacontent;
+	}
+
+	public void setDatacontent(String datacontent) {
+		this.datacontent = datacontent;
+	}
+
+	public String getHisdata() {
+		return hisdata;
+	}
+
+	public void setHisdata(String hisdata) {
+		this.hisdata = hisdata;
+	}
+
+	public String getIsSend() {
+		return isSend;
+	}
+
+	public void setIsSend(String isSend) {
+		this.isSend = isSend;
+	}
+    
+    
+    
+}

@@ -1,0 +1,189 @@
+package com.yy.data.vo;
+
+public class WControlinfostatesVo {
+	private String id;
+
+	private String controlid;
+
+	private String sendtime;
+
+	private String charge;
+
+	private String signals;
+
+	private String temperature;
+
+	private String humidity;
+
+	private String rsrp;
+	private String version;
+	// 以下是新加的
+	private String opensum;
+	private String t3324;
+	private String t3412;
+	private String chn;
+	private String cellid;
+	private String snr;
+	private String iccid;
+	private String equstate;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id == null ? null : id.trim();
+	}
+
+	public String getControlid() {
+		return controlid;
+	}
+
+	public void setControlid(String controlid) {
+		this.controlid = controlid == null ? null : controlid.trim();
+	}
+
+	public String getSendtime() {
+		return sendtime;
+	}
+
+	public void setSendtime(String sendtime) {
+		this.sendtime = sendtime == null ? null : sendtime.trim();
+	}
+
+	public String getCharge() {
+		return charge;
+	}
+
+	public void setCharge(String charge) {
+		this.charge = charge == null ? null : charge.trim();
+	}
+
+	public String getTemperature() {
+		return temperature;
+	}
+
+	public void setTemperature(String temperature) {
+		this.temperature = temperature == null ? null : temperature.trim();
+	}
+
+	public String getHumidity() {
+		return humidity;
+	}
+
+	public void setHumidity(String humidity) {
+		this.humidity = humidity == null ? null : humidity.trim();
+	}
+
+	public String getRsrp() {
+		return rsrp;
+	}
+
+	public void setRsrp(String rsrp) {
+		this.rsrp = rsrp == null ? null : rsrp.trim();
+	}
+
+	public String getVersion() {
+		return version;
+	}
+
+	public void setVersion(String version) {
+		this.version = version == null ? null : version.trim();
+	}
+
+	public String getOpensum() {
+		return opensum;
+	}
+
+	public void setOpensum(String opensum) {
+		this.opensum = opensum;
+	}
+
+	public String getT3324() {
+		return t3324;
+	}
+
+	public void setT3324(String t3324) {
+		this.t3324 = t3324;
+	}
+
+	public String getT3412() {
+		return t3412;
+	}
+
+	public void setT3412(String t3412) {
+		this.t3412 = t3412;
+	}
+
+	public String getChn() {
+		return chn;
+	}
+
+	public void setChn(String chn) {
+		this.chn = chn;
+	}
+
+	public String getCellid() {
+		return cellid;
+	}
+
+	public void setCellid(String cellid) {
+		this.cellid = cellid;
+	}
+
+	public String getSnr() {
+		return snr;
+	}
+
+	public void setSnr(String snr) {
+		this.snr = snr;
+	}
+
+	public String getIccid() {
+		return iccid;
+	}
+
+	public void setIccid(String iccid) {
+		this.iccid = iccid;
+	}
+
+	public String getEqustate() {
+		return equstate;
+	}
+
+	public void setEqustate(String equstate) {
+		this.equstate = equstate;
+	}
+
+	public String getSignals() {
+		return signals;
+	}
+
+	public void setSignals(String signals) {
+		this.signals = signals;
+	}
+
+	public WControlinfostatesVo(String id, String controlid, String sendtime, String charge, String signal,
+			String temperature, String humidity, String rsrp, String version, String opensum, String t3324,
+			String t3412, String chn, String cellid, String snr, String iccid, String equstate) {
+		super();
+		this.id = id;
+		this.controlid = controlid;
+		this.sendtime = sendtime;
+		this.charge = charge;
+		this.signals = signal;
+		this.temperature = temperature;
+		this.humidity = humidity;
+		this.rsrp = rsrp;
+		this.version = version;
+		this.opensum = opensum;
+		this.t3324 = t3324;
+		this.t3412 = t3412;
+		this.chn = chn;
+		this.cellid = cellid;
+		this.snr = snr;
+		this.iccid = iccid;
+		this.equstate = equstate;
+	}
+
+}

@@ -1,0 +1,9 @@
+package com.yy.data.dao;
+import java.util.List;
+
+import com.yy.data.model.DeviceDataInfo;
+
+
+public interface DeviceDataInfoMapper {
+	int saveDeviceDataInfo(DeviceDataInfo deviceDataInfo);
+}

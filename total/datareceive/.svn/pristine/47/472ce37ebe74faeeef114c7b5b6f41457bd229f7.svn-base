@@ -1,0 +1,141 @@
+package com.yy.data.coap;
+
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.yy.common.utils.StringUtils;
+
+public class CoapContants {
+	// 先默认在这里写死。roomlock应用
+	public static String platForm_manufacturerId = "itek001";
+	public static String platForm_manufacturerName = "itek";
+	public static String platForm_model = "rlock";
+	public static String platFormEquType = "DoorLock";
+	// 默认 华脉1拖2 huamai1n
+	static String appId = "Ie8lBWMIw4biJy2ZnpD98N0IOsYa";
+	static String secret = "IYoVz8VbfIJTy4EsQajkDZfj9Dga";
+
+	// iot平台ip及端口
+	static String platformIp = "180.101.147.89";// device.api.ct10649.com域名无效，应该是正式地址//180.101.147.89(电信IP)
+	static String platformPort = "8743";
+
+	static String accessToken = ""; // 每次都重新获取
+	static String refreshToken = "";
+	public static Map<String, String> platFormEquPreFix = new HashMap<String, String>();// 设备16进制编号区别iot平台参数
+	static {
+		// 设备编码前4位对应iot平台标志
+//		platFormEquPreFix.put("6410", "2");// 华脉-北京联通
+//		platFormEquPreFix.put("6420", "1");// 阳泉-电信
+//		platFormEquPreFix.put("6430", "3");// 中天-北京联通
+//		platFormEquPreFix.put("6450", "4");// 汇珏-北京联通
+	}
+
+	public static String[] changeIotParam(String codePrefix, String iotconfs) {
+		String flag = platFormEquPreFix.get(codePrefix);
+		String[] str = new String[4];
+		if (flag == null) {
+			str[0] = CoapContants.appId;
+			str[1] = CoapContants.secret;
+			str[2] = CoapContants.platformIp;
+			str[3] = CoapContants.platformPort;
+		} else {
+			Class<?> c2 = null;
+			try {
+				c2 = Class.forName("com.zly.nb.coap.CoapContants");
+			} catch (ClassNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			Field field = null;
+			// 4个参数
+			String appId = null;
+			String secret = null;
+			String platformIp = null;
+			String platformPort = null;
+			if (StringUtils.isBlank(iotconfs)) {
+				iotconfs = null;
+			}
+			try {
+				String f1 = "appId_" + flag;
+				if (iotconfs != null && !"0".equals(iotconfs)) {
+					f1 += ("_" + iotconfs);
+				}
+				field = c2.getDeclaredField(f1);
+				field.setAccessible(true);
+				try {
+					appId = field.get(c2) + "";
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			} catch (NoSuchFieldException e) {
+			}
+			try {
+				String f1 = "secret_" + flag;
+				if (iotconfs != null && !"0".equals(iotconfs)) {
+					f1 += ("_" + iotconfs);
+				}
+				field = c2.getDeclaredField(f1);
+				field.setAccessible(true);
+
+				try {
+					secret = field.get(c2) + "";
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			} catch (NoSuchFieldException e) {
+			}
+			try {
+				String f1 = "platformIp_" + flag;
+				if (iotconfs != null && !"0".equals(iotconfs)) {
+					f1 += ("_" + iotconfs);
+				}
+				field = c2.getDeclaredField(f1);
+				field.setAccessible(true);
+
+				try {
+					platformIp = field.get(c2) + "";
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			} catch (NoSuchFieldException e) {
+			}
+			try {
+				String f1 = "platformPort_" + flag;
+				if (iotconfs != null && !"0".equals(iotconfs)) {
+					f1 += ("_" + iotconfs);
+				}
+				field = c2.getDeclaredField(f1);
+				field.setAccessible(true);
+
+				try {
+					platformPort = field.get(c2) + "";
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			} catch (NoSuchFieldException e) {
+			}
+			if (appId == null) {
+				appId = CoapContants.appId;
+				secret = CoapContants.secret;
+				platformIp = CoapContants.platformIp;
+				platformPort = CoapContants.platformPort;
+			}
+
+			str[0] = appId;
+			str[1] = secret;
+			str[2] = platformIp;
+			str[3] = platformPort;
+		}
+
+		return str;
+	}
+
+	public static void main(String[] a) {
+		// System.out.println(changeIotParam("1")[3]);
+	}
+}

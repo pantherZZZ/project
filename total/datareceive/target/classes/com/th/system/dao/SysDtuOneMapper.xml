@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.th.system.dao.SysDtuOneMapper">
+
+
+    <select id="findByDtuName" resultType="com.th.system.vo.SysDtuOneVo">
+        SELECT sd.DTUid  equipmentId,
+        sd.postId portId,
+        sd.modelId modelId,
+        sd.dtuName  equipmentName,
+        p.plant_id  plantId,
+        t.type_id  typeId,
+        m.modelNumber_id modelNumberId,
+        p.plant_name,t.type_name,m.modelNumber_name
+        FROM sys_dtu sd
+        LEFT JOIN  sys_dtu_plant p ON sd.plantId=p.plant_id
+        LEFT JOIN  sys_dtu_type t  ON  sd.typeId=t.type_id
+        LEFT JOIN  sys_dtu_modelNumber m  ON  sd.modelNumberId=m.modelNumber_id
+        WHERE
+        1=1
+        <if test="dtuName != null and dtuName != '' ">
+         and sd.dtuName LIKE CONCAT(#{dtuName},'%')
+        </if>
+        <if test="modelId != null and modelId != '' ">
+            and sd.modelId=#{modelId}
+        </if>
+    </select>
+
+    <select id="findByDtuNameCount" resultType="java.lang.Long">
+        SELECT count(1)
+        FROM sys_dtu sd
+        LEFT JOIN  sys_dtu_plant p ON sd.plantId=p.plant_id
+        LEFT JOIN  sys_dtu_type t  ON  sd.typeId=t.type_id
+        LEFT JOIN  sys_dtu_modelNumber m  ON  sd.modelNumberId=m.modelNumber_id
+        WHERE
+        1=1
+        <if test="dtuName != null and dtuName != '' ">
+            and sd.dtuName LIKE CONCAT(#{dtuName},'%')
+        </if>
+        <if test="modelId != null and modelId != '' ">
+            and sd.modelId=#{modelId}
+        </if>
+    </select>
+</mapper>
+
+

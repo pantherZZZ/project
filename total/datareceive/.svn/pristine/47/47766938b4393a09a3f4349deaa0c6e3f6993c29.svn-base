@@ -1,0 +1,12 @@
+package com.yy.data.service;
+
+import java.util.List;
+
+import com.yy.data.model.DeviceDataInfo;
+
+
+public interface DeviceDataInfoService {
+
+	int saveDeviceDataInfo(DeviceDataInfo deviceDataInfo);
+    
+}

@@ -1,0 +1,421 @@
+package com.yy.data.coap;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.huawei.iotplatform.client.NorthApiClient;
+import com.huawei.iotplatform.client.NorthApiException;
+import com.huawei.iotplatform.client.dto.AsynCommandDTO;
+import com.huawei.iotplatform.client.dto.AuthOutDTO;
+import com.huawei.iotplatform.client.dto.ClientInfo;
+import com.huawei.iotplatform.client.dto.ModifyDeviceInfoInDTO;
+import com.huawei.iotplatform.client.dto.PostDeviceCommandInDTO;
+import com.huawei.iotplatform.client.dto.PostDeviceCommandOutDTO;
+import com.huawei.iotplatform.client.dto.QueryDeviceDTO;
+import com.huawei.iotplatform.client.dto.QueryDevicesInDTO;
+import com.huawei.iotplatform.client.dto.QueryDevicesOutDTO;
+import com.huawei.iotplatform.client.dto.RegDirectDeviceInDTO;
+import com.huawei.iotplatform.client.dto.RegDirectDeviceOutDTO;
+import com.huawei.iotplatform.client.dto.SSLConfig;
+import com.huawei.iotplatform.client.dto.SubscribeInDTO;
+import com.huawei.iotplatform.client.invokeapi.Authentication;
+import com.huawei.iotplatform.client.invokeapi.DataCollection;
+import com.huawei.iotplatform.client.invokeapi.DeviceManagement;
+import com.huawei.iotplatform.client.invokeapi.SignalDelivery;
+import com.huawei.iotplatform.utils.JsonUtil;
+import com.yy.common.constant.MyConstants;
+import com.yy.common.utils.Convert;
+import com.yy.common.utils.Log4jUtil;
+import com.yy.common.utils.StringUtils;
+
+public class CoapUtils {
+	private NorthApiClient nac = null;
+	private String accessToken = null;
+	private Authentication atc = null;
+	String appId = CoapContants.appId;
+	String secret = CoapContants.secret;
+	String platformIp = CoapContants.platformIp;
+	String platformPort = CoapContants.platformPort;
+
+	/**
+	 * 默认，在无解析数据结果时也会调用此
+	 */
+	public CoapUtils() {
+		try {
+			init();
+		} catch (NorthApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 适用于多iot平台
+	 * 
+	 * @param equid
+	 */
+	public CoapUtils(String equid) {
+		try {
+			if (MyConstants.iot_wrong_equid.get(equid) != null) {// bug补丁
+				init();
+			} else {
+				init(equid);
+			}
+
+		} catch (NorthApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public CoapUtils(String equid, String iotconfs) {
+		try {
+			if (MyConstants.iot_wrong_equid.get(equid) != null) {// bug补丁,电信的录入到联通去了
+				init();
+			} else {
+				init(equid, iotconfs);
+			}
+
+		} catch (NorthApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public CoapUtils(String equid, Map netcongig) {
+		try {
+			if (MyConstants.iot_wrong_equid.get(equid) != null) {// bug补丁,电信的录入到联通去了
+				init();
+			} else {
+				init(netcongig);
+			}
+
+		} catch (NorthApiException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 主要用于bug修复，后面全部用带参数的
+	 * 
+	 * @throws NorthApiException
+	 */
+	private void init() throws NorthApiException {
+		nac = new NorthApiClient();
+
+		ClientInfo ci = new ClientInfo();
+
+		String appId = CoapContants.appId;
+		String secret = CoapContants.secret;
+
+		ci.setAppId(appId);
+		ci.setPlatformIp(CoapContants.platformIp);
+		ci.setPlatformPort(CoapContants.platformPort);
+		ci.setSecret(secret);
+
+		nac.setClientInfo(ci);
+		initSSLConfig(nac);
+
+		// auth
+		atc = new Authentication(nac);
+
+		AuthOutDTO aod = null;
+
+		aod = atc.getAuthToken();
+
+		accessToken = aod.getAccessToken();
+	}
+
+	private void init(String equid) throws NorthApiException {
+		nac = new NorthApiClient();
+
+		ClientInfo ci = new ClientInfo();
+
+		// 根据equid动态修改iot参数
+		String[] iotparams = CoapContants
+				.changeIotParam(Convert.byte2HexStrNoSpace(Convert.intToBytesHH(Integer.parseInt(equid)), 0, 2), null);
+		appId = iotparams[0];
+		secret = iotparams[1];
+		platformIp = iotparams[2];
+		platformPort = iotparams[3];
+
+		ci.setAppId(appId);
+		ci.setSecret(secret);
+		ci.setPlatformIp(platformIp);
+		ci.setPlatformPort(platformPort);
+
+		nac.setClientInfo(ci);
+		initSSLConfig(nac);
+
+		// auth
+		atc = new Authentication(nac);
+
+		AuthOutDTO aod = null;
+
+		aod = atc.getAuthToken();
+
+		accessToken = aod.getAccessToken();
+	}
+
+	private void init(String equid, String iotconfs) throws NorthApiException {
+
+		nac = new NorthApiClient();
+
+		ClientInfo ci = new ClientInfo();
+
+		// 根据equid动态修改iot参数
+		String[] iotparams = CoapContants.changeIotParam(
+				Convert.byte2HexStrNoSpace(Convert.intToBytesHH(Integer.parseInt(equid)), 0, 2), iotconfs);
+		appId = iotparams[0];
+		secret = iotparams[1];
+		platformIp = iotparams[2];
+		platformPort = iotparams[3];
+
+		ci.setAppId(appId);
+		ci.setSecret(secret);
+		ci.setPlatformIp(platformIp);
+		ci.setPlatformPort(platformPort);
+
+		nac.setClientInfo(ci);
+		initSSLConfig(nac);
+
+		// auth
+		atc = new Authentication(nac);
+
+		AuthOutDTO aod = null;
+
+		aod = atc.getAuthToken();
+
+		accessToken = aod.getAccessToken();
+	}
+
+	private void init(Map netconfig) throws NorthApiException {
+
+		nac = new NorthApiClient();
+
+		ClientInfo ci = new ClientInfo();
+		appId = netconfig.get("appid") + "";
+		secret = netconfig.get("secret") + "";
+		platformIp = netconfig.get("ip") + "";
+		platformPort = netconfig.get("port") + "";
+
+		ci.setAppId(appId);
+		ci.setSecret(secret);
+		ci.setPlatformIp(platformIp);
+		ci.setPlatformPort(platformPort);
+
+		nac.setClientInfo(ci);
+		initSSLConfig(nac);
+
+		// auth
+		atc = new Authentication(nac);
+
+		AuthOutDTO aod = null;
+
+		aod = atc.getAuthToken();
+
+		accessToken = aod.getAccessToken();
+	}
+
+	public void logoutAuthToken() throws NorthApiException {
+		// 注销
+		// if (atc != null)
+		// atc.logoutAuthToken(accessToken);
+	}
+
+	/**
+	 * 废除返回imei和deviceId 以逗号隔开,新增设备的时候调用该方法
+	 * 
+	 * @param imeis
+	 * @param equnames
+	 * @param equtypes
+	 * @return
+	 * @throws NorthApiException
+	 */
+	@Transactional
+	public List<String> RegDirectDevice(String[] imeis, String[] equnames, String[] equtypes) throws NorthApiException {
+		List<String> rs = new ArrayList<String>();
+		DeviceManagement dm = new DeviceManagement(nac);
+		for (int i = 0; i < imeis.length; i++) {
+			String imei = imeis[i];
+			if (StringUtils.isBlank(imei))
+				continue;
+			String equname = equnames[i];
+			String equtype = equtypes[i];
+			// 注册设备
+			RegDirectDeviceInDTO rddid = new RegDirectDeviceInDTO();
+			String nodeid = imei;
+			String verifyCode = nodeid;
+			rddid.setNodeId(nodeid);
+			rddid.setVerifyCode(verifyCode);
+			rddid.setTimeout(0);
+			RegDirectDeviceOutDTO rddod = null;
+			// 重复注册会报错，基本不影响业务。
+			// 碰到equid不换，imei换了的话，并不走新增方法，永远注册不上，最好在保存设备的时候，都要尝试注册设备，已存在时走modifyDeviceInfo不走regDirectDevice
+			rddod = dm.regDirectDevice(rddid, appId, accessToken);
+			String deviceId = rddod.getDeviceId();
+			ModifyDeviceInfoInDTO mdiid = new ModifyDeviceInfoInDTO();
+			mdiid.setName(equname);
+			mdiid.setDeviceId(deviceId);
+			mdiid.setManufacturerId("Zb001");
+			mdiid.setManufacturerName("Zb001");
+			mdiid.setDeviceType(equtype);
+			mdiid.setModel("ZbDevice");
+			mdiid.setProtocolType("CoAP");
+			dm.modifyDeviceInfo(mdiid, appId, accessToken);
+			rs.add(imei + "," + deviceId);
+		}
+		return rs;
+	}
+
+	@Transactional
+	public List<String> RegDirectDevice_one(String imei, String equname, String equtype, String manufacturerId,
+			String manufacturerName, String model, String deviceId) throws NorthApiException {
+		List<String> rs = new ArrayList<String>();
+		DeviceManagement dm = new DeviceManagement(nac);
+		if (StringUtils.isBlank(imei))
+			return rs;
+		// 注册设备
+		RegDirectDeviceInDTO rddid = new RegDirectDeviceInDTO();
+		String nodeid = imei;
+		String verifyCode = nodeid;
+		rddid.setNodeId(nodeid);
+		rddid.setVerifyCode(verifyCode);
+		rddid.setTimeout(0);
+		RegDirectDeviceOutDTO rddod = null;
+		try {
+			// 若从app删除，iot平台未删，则系统的deviceid永远取不到
+			rddod = dm.regDirectDevice(rddid, appId, accessToken);
+			deviceId = rddod.getDeviceId();
+		} catch (Exception e) {
+			Log4jUtil.getLogger(getClass()).info("更新Iot设备，deviceId:" + deviceId);
+		}
+		if (StringUtils.isBlank(deviceId)) {
+
+		} else {
+			ModifyDeviceInfoInDTO mdiid = new ModifyDeviceInfoInDTO();
+			mdiid.setName(equname);
+			mdiid.setDeviceId(deviceId);
+			mdiid.setManufacturerId(manufacturerId);// 很重要，必须和开发者平台一致 002
+			mdiid.setManufacturerName(manufacturerName);// 很重要，必须和开发者平台一致 njpt
+			mdiid.setDeviceType(equtype);// 很重要，必须和开发者平台一致
+			mdiid.setModel(model);// 很重要，必须和开发者平台一致 D001
+			mdiid.setProtocolType("CoAP");// 很重要，必须和开发者平台一致 CoAP
+			dm.modifyDeviceInfo(mdiid, appId, accessToken);
+			rs.add(imei + "," + deviceId);
+		}
+
+		return rs;
+	}
+
+	public String deleteDevice(String deviceId) {
+		DeviceManagement dm = new DeviceManagement(nac);
+		if (StringUtils.isBlank(deviceId))
+			return "0";
+		// 删除设备
+		try {
+			dm.deleteDirectDevice(deviceId, appId, accessToken);
+		} catch (NorthApiException e) {
+			// TODO Auto-generated catch block
+			Log4jUtil.getLogger(getClass()).info("iot不存在" + deviceId);
+		}
+		return "1";
+	}
+
+	/**
+	 * 订阅平台
+	 * 
+	 * @throws NorthApiException
+	 */
+	public void Subscribe() throws NorthApiException {
+		DataCollection dc = new DataCollection(nac);
+		SubscribeInDTO sid = new SubscribeInDTO();
+		String notifyType = "deviceDatasChanged";// deviceDataChanged
+		sid.setNotifyType(notifyType);
+		// String callbackurl = CoapContants.callbackurl; //
+		// "http://218.2.234.170:23443/udpserver/callBack_T";
+		// sid.setCallbackurl(callbackurl);
+		// dc.subscribeNotify(sid, accessToken);
+
+	}
+
+	/**
+	 * 创建命令
+	 * 
+	 * @param deviceId
+	 * @param command
+	 * @throws Exception
+	 */
+	public void postDeviceCommand(String deviceId, String command) throws Exception {
+		SignalDelivery sd = new SignalDelivery();
+		sd.setNorthApiClient(nac);
+
+		PostDeviceCommandInDTO pdcid = new PostDeviceCommandInDTO();
+		pdcid.setDeviceId(deviceId);
+		AsynCommandDTO acdo = new AsynCommandDTO();
+		String serviceId = "Lock";
+		String method = "C_LOCK";
+		ObjectNode paras = JsonUtil.convertObject2ObjectNode(command);// "{\"value\":\"100\"}"
+		acdo.setServiceId(serviceId);
+		acdo.setMethod(method);
+		acdo.setParas(paras);
+		pdcid.setCommand(acdo);
+		pdcid.setExpireTime(0);// 不缓存
+		PostDeviceCommandOutDTO pdcod = sd.postDeviceCommand(pdcid, appId, accessToken);
+		System.out.println(pdcod.toString());
+	}
+
+	public List<String> queryDevices_imeiAndDeviceId() throws NorthApiException {
+		List<String> rs = new ArrayList<String>();
+		DataCollection dc = new DataCollection(nac);
+		QueryDevicesInDTO qdido = new QueryDevicesInDTO();
+		String gatewayId = null;
+		qdido.setGatewayId(gatewayId);
+		qdido.setPageNo(0);
+		qdido.setPageSize(260);
+		QueryDevicesOutDTO qdodo = dc.queryDevices(qdido, appId, accessToken);
+		List<QueryDeviceDTO> list = qdodo.getDevices();
+		for (QueryDeviceDTO ob : list) {
+			rs.add(ob.getDeviceInfo().getNodeId() + "," + ob.getDeviceId());
+		}
+		return rs;
+
+	}
+
+	public void initSSLConfig(NorthApiClient nac) {
+		if (platformIp.equals("180.101.147.89")) {
+			String selfcertpwd = "IoM@1234";
+			String trustcapwd = "Huawei@123";
+			String demo_base_path = this.getClass().getClassLoader().getResource("").getPath() + "resource\\cert";
+
+			System.out.println(demo_base_path);
+			// String demo_base_path = "D:/workspace4.4/udpserver";
+			String selfcertpath = demo_base_path + "\\outgoing.CertwithKey.pkcs12";
+			String trustcapath = demo_base_path + "\\ca.jks";
+			SSLConfig config = new SSLConfig();
+			config.setSelfCertPwd(selfcertpwd);
+			config.setSelfCertPath(selfcertpath);
+			config.setTrustCAPath(trustcapath);
+			config.setTrustCAPwd(trustcapwd);
+			try {
+				nac.initSSLConfig(config);
+			} catch (NorthApiException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} else {
+			try {
+				nac.initSSLConfig();
+			} catch (NorthApiException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+}

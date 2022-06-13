@@ -1,0 +1,259 @@
+package com.yy.common.utils;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.servlet.http.HttpServletResponse;
+
+import com.yy.common.constant.MyConstants;
+
+public class FileOperateUtil {
+	public static void downLocalFile(String path, HttpServletResponse response) throws IOException {
+
+		File file = new File(path);// path是根据日志路径和文件名拼接出来的
+		String filename = file.getName();// 获取日志文件名称
+		downLocalFileDefineFileName(path, filename, response);
+	}
+
+	public static void downLocalFileDefineFileName(String path, String filename, HttpServletResponse response)
+			throws IOException {
+
+		File file = new File(path);// path是根据日志路径和文件名拼接出来的
+		InputStream fis = new BufferedInputStream(new FileInputStream(path));
+		byte[] buffer = new byte[fis.available()];
+		fis.read(buffer);
+		fis.close();
+		response.reset();
+		// 先去掉文件名称中的空格,然后转换编码格式为utf-8,保证不出现乱码,这个文件名称用于浏览器的下载框中自动显示的文件名
+		response.addHeader("Content-Disposition",
+				"attachment;filename=" + new String(filename.replaceAll(" ", "").getBytes("utf-8"), "iso8859-1"));
+		response.addHeader("Content-Length", "" + file.length());
+		OutputStream os = new BufferedOutputStream(response.getOutputStream());
+		response.setContentType("application/octet-stream");
+		os.write(buffer);// 输出文件
+		os.flush();
+		os.close();
+	}
+
+	/**
+	 * 读取文件返回字节数组
+	 * 
+	 * @param path
+	 * @return
+	 * @throws IOException
+	 */
+	public static byte[] getFileBytes(String path) throws IOException {
+		InputStream fis = new BufferedInputStream(new FileInputStream(path));
+		byte[] buffer = new byte[fis.available()];
+		fis.read(buffer);
+		fis.close();
+
+		return buffer;
+	}
+
+	/**
+	 * 
+	 * @param filebytes   文件字节数组
+	 * @param packagesize 每个包的字节大小
+	 * @return
+	 */
+	public static List<String> subPackageSize(byte[] filebytes, int packagesize) {
+		List<String> list = new ArrayList<String>();
+		String content = null;
+		if (filebytes != null) {
+			int j = 1;// 包序号
+			for (int i = 0; i < filebytes.length; i += packagesize) {
+				byte[] mvalue;// 每一个包的字节数组
+				if (i + packagesize > filebytes.length) {// 最后一个包
+					mvalue = new byte[filebytes.length % packagesize];// 最后一个包的大小是变化的
+				} else {
+					mvalue = new byte[packagesize];// 每个包的大小是固定的
+				}
+
+				for (int k = 0; k < packagesize; k++) {
+
+					if (k + i < filebytes.length) {// 是否溢出
+
+						mvalue[k] = filebytes[k + i];
+					}
+				}
+
+				content = Convert.bytesToString(mvalue);
+				// 测试分包文件
+				FileOperateUtil.getFile(mvalue, "C:\\package\\0", j++ + "");
+				// 测试完毕
+				content = content.replaceAll("%", "%25");
+				content = content.replaceAll("&", "%26");
+				content = content.replaceAll("#", "%23");
+
+				list.add(content);// 每一个包按次添加到list中
+			}
+		}
+		return list;
+
+	}
+
+	/**
+	 * 根据byte数组，生成文件
+	 */
+	public static void getFile(byte[] bfile, String filePath, String fileName) {
+		BufferedOutputStream bos = null;
+		FileOutputStream fos = null;
+		File file = null;
+		try {
+			File dir = new File(filePath);
+			if (!dir.exists() && dir.isDirectory()) {// 判断文件目录是否存在
+				dir.mkdirs();
+			}
+			file = new File(filePath + "\\" + fileName);
+			fos = new FileOutputStream(file);
+			bos = new BufferedOutputStream(fos);
+			bos.write(bfile);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (bos != null) {
+				try {
+					bos.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+			if (fos != null) {
+				try {
+					fos.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		}
+	}
+
+	public static void saveFile(InputStream inputStream, String fileName, String path) {
+
+		OutputStream os = null;
+		try {
+			// 2、保存到临时文件
+			// 1K的数据缓冲
+			byte[] bs = new byte[1024];
+			// 读取到的数据长度
+			int len;
+			// 输出的文件流保存到本地文件
+
+			File tempFile = new File(path);
+			if (!tempFile.exists()) {
+				tempFile.mkdirs();
+			}
+			os = new FileOutputStream(tempFile.getPath() + File.separator + fileName);
+			// 开始读取
+			while ((len = inputStream.read(bs)) != -1) {
+				os.write(bs, 0, len);
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			// 完毕，关闭所有链接
+			try {
+				os.close();
+				inputStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * 上传文件的base64格式到文件服务器
+	 * 
+	 * @param filecontent
+	 * @param filepath
+	 * @param filename
+	 * @return
+	 */
+	public static String uploadToFileServer(String filecontent, String filepath, String filename) {
+		Map m = new HashMap();
+		String url = MyConstants.fileServerUrl + "/servlet/FileUpload";
+		HttpUtil httputil = new HttpUtil();
+
+		String param = "";
+		try {
+			param = URLEncoder.encode("filecontent", "UTF-8") + "=" + URLEncoder.encode(filecontent, "UTF-8")
+					+ "&filepath=" + filepath + "&filename=" + filename + "&key=" + MyConstants.fileServerKey + "&f=1";
+			httputil.openConnectionForPost_(url, param);
+			m.put("result", "1");
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			m.put("result", "0");
+			m.put("infos", "上传失败");
+		}
+		return JsonUtil.writeAsString(m);
+	}
+
+	/**
+	 * 读取网络路径文件返回字节数组
+	 * 
+	 * @param path
+	 * @return
+	 * @throws IOException
+	 */
+	public static byte[] getUrlFileBytes(String path) throws IOException {
+		URL url = new URL(path);
+		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		// 设置超时间为5秒
+		conn.setConnectTimeout(5 * 1000);
+		// 防止屏蔽程序抓取而返回403错误
+		// conn.setRequestProperty("User-Agent",
+		// "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
+		// 得到输入流
+		InputStream inputStream = conn.getInputStream();
+		// 获取自己数组
+		byte[] getData = readInputStream(inputStream);
+		return getData;
+	}
+
+	/**
+	 * 从输入流中获取字节数组
+	 * 
+	 * @param inputStream
+	 * @return
+	 * @throws IOException
+	 */
+	public static byte[] readInputStream(InputStream inputStream) throws IOException {
+		byte[] buffer = new byte[1024];
+		int len = 0;
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		while ((len = inputStream.read(buffer)) != -1) {
+			bos.write(buffer, 0, len);
+		}
+		bos.close();
+		return bos.toByteArray();
+	}
+
+	public static void main(String[] a) {
+
+		byte[] bs1 = { 97, 98, 100 };
+		String s = Convert.bytesToString(bs1);
+		System.out.println(s);
+
+		byte[] bs = Convert.stringToBytes(s);
+		System.out.println(bs[0] + "" + bs[1] + bs[2]);
+
+	}
+}

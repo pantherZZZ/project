@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysDetectionMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysDetection">
+    <id column="detectionId" property="detectionId" />
+    <result column="detectionName" property="detectionName" />
+    <result column="factorId" property="factorId" />
+    <result column="detectionTypeId" property="detectionTypeId" />
+    <result column="userId" property="userId" />
+  </resultMap>
+	
+  <sql id="Base_List">
+    detectionId, detectionName, factorId,detectionTypeId,userId
+  </sql>
+  
+   <select id="findByUserId" resultType="com.th.system.vo.SysDetectionVo">
+		select  d.detectionId, d.detectionName, d.factorId,d.detectionTypeId,d.userId 
+		,s.detectionTypeName,f.factorName
+		from sys_detection as d 
+		inner join sys_factor as f
+		on f.factorId = d.factorId
+		inner join sys_detectionType as s
+		on s.detectionTypeId = d.detectionTypeId
+		<where>
+			<if test="userId != null">
+		      userId = #{userId}
+		   </if>
+		   <if test="detectionName != null">
+		      and detectionName like concat('%',#{detectionName},'%')
+		   </if>
+		     LIMIT #{page},#{limit}
+		</where>
+   </select>
+  
+  <select id="findById" resultMap="BaseMap">
+		select <include refid="Base_List" /> from sys_detection 
+		<where>
+			<if test="detectionId != null">
+		      detectionId = #{detectionId}
+		   </if>
+		</where>
+   </select>
+  
+   <delete id="delDetection">
+  	DELETE from sys_detection
+  	where detectionId = #{detectionId}
+   </delete>  
+  
+   <update id="updateDetection" parameterType="com.th.system.po.SysDetection">
+        update sys_detection
+        <set>
+            <if test="detectionName != null">`detectionName` = #{detectionName},</if>
+            <if test="factorId != null">`factorId` = #{factorId},</if>
+            <if test="detectionTypeId != null">`detectionTypeId` = #{detectionTypeId},</if>
+        </set>
+        where detectionId = #{detectionId}
+  </update>
+  
+   <insert id="insertDetection" parameterType="com.th.system.po.SysDetection">
+    insert into sys_detection
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="detectionName != null">
+        detectionName,
+      </if>
+      <if test="factorId != null">
+        factorId,
+      </if>
+      <if test="detectionTypeId != null">
+        detectionTypeId,
+      </if>
+      <if test="userId != null">
+        userId,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="detectionName != null">
+        #{detectionName},
+      </if>
+      <if test="factorId != null">
+        #{factorId},
+      </if>
+      <if test="detectionTypeId != null">
+        #{detectionTypeId},
+      </if>
+      <if test="userId != null">
+        #{userId},
+      </if>
+    </trim>
+  </insert>
+
+</mapper>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysThresholdValueMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysThresholdValue">
+    <id column="thresholdValueId" property="thresholdValueId" />
+    <result column="modelId" property="modelId" />
+    <result column="maximum1" property="maximum1" />
+    <result column="minimum1" property="minimum1" />
+    <result column="maximum2" property="maximum2" />
+    <result column="minimum2" property="minimum2" />
+    <result column="maximum3" property="maximum3" />
+    <result column="minimum3" property="minimum3" />
+    <result column="measureId" property="measureId" />
+    <result column="show" property="show" />
+    <result column="equipmentId" property="equipmentId" />
+  </resultMap>
+	
+  <sql id="Base_List">
+    thresholdValueId,measureId, modelId,maximum1,minimum1,maximum2,minimum2,maximum3,maximum3
+  </sql>
+
+   <select id="findThresholdValueModelId" resultType="com.th.system.vo.SysThresholdValueVo" >
+		select v.thresholdValueId,v.modelId,
+		v.maximum1,v.minimum1,v.maximum2,
+		v.minimum2,v.maximum3,v.minimum3,s.measureName,s.measureId,f.factorName,f.factorId from 
+		sys_thresholdvalue as v
+		inner join sys_model as m
+		on v.modelId = m.modelId
+		inner join sys_measure as s
+		on s.measureId = v.measureId
+		inner join sys_factor as f
+		on f.factorId = s.factorId
+		and m.modelId = #{modelId}
+		<if test="measureName != null">
+		    and s.measureName like concat('%',#{measureName},'%')
+		</if>
+		LIMIT #{page},#{limit}
+  </select>
+
+  <select id="findByThresholdValueId" resultType="com.th.system.vo.SysThresholdValueVo" parameterType="java.lang.String">
+		select v.thresholdValueId,v.modelId,
+		v.maximum1,v.minimum1,v.maximum2,
+		v.minimum2,v.maximum3,v.minimum3,s.measureName,s.measureId,f.factorName,f.factorId from 
+		sys_thresholdvalue as v
+		inner join sys_model as m
+		on v.modelId = m.modelId
+		inner join sys_measure as s
+		on s.measureId = v.measureId
+		inner join sys_factor as f
+		on f.factorId = s.factorId
+		and v.thresholdValueId = #{thresholdValueId}
+  </select>
+  
+   <delete id="delThresholdValue" parameterType="java.lang.String">
+  	DELETE from sys_thresholdvalue
+  	where thresholdValueId = #{thresholdValueId}
+  </delete>
+  
+   <select id="oneWarning" resultMap="BaseMap">
+		select t.thresholdValueId,t.measureId,
+		t.modelId,t.maximum1,t.minimum1,t.maximum2,
+		t.minimum2,t.maximum3,t.maximum3 from
+		sys_thresholdvalue as t
+		inner join sys_measure as m
+		on m.measureId = t.measureId
+		and t.maximum1 &gt; #{value}
+		and t.minimum1 &lt; #{value}
+		and m.equipmentId = #{equipmentId}
+		group by(t.thresholdValueId)
+   </select>
+  
+    <select id="twoWarning" resultMap="BaseMap">
+		select t.thresholdValueId,t.measureId,
+		t.modelId,t.maximum1,t.minimum1,t.maximum2,
+		t.minimum2,t.maximum3,t.maximum3 from
+		sys_thresholdvalue as t
+		inner join sys_measure as m
+		on m.measureId = t.measureId
+		and t.maximum2 &gt; #{value}
+		and t.minimum2 &lt; #{value}
+		and m.equipmentId = #{equipmentId}
+		group by(t.thresholdValueId)
+   </select>
+   
+    <select id="threeWarning" resultMap="BaseMap">
+		select t.thresholdValueId,t.measureId,
+		t.modelId,t.maximum1,t.minimum1,t.maximum2,
+		t.minimum2,t.maximum3,t.maximum3 from
+		sys_thresholdvalue as t
+		inner join sys_measure as m
+		on m.measureId = t.measureId
+		and t.maximum3 &gt; #{value}
+		and t.minimum3 &lt; #{value}
+		and m.equipmentId = #{equipmentId}
+		group by(t.thresholdValueId)
+   </select>
+  
+  <update id="updateThreshold" parameterType="com.th.system.po.SysThresholdValue">
+        update sys_thresholdvalue
+        <set>
+            <if test="maximum1 != null">maximum1 = #{maximum1},</if>
+            <if test="minimum1 != null">minimum1 = #{minimum1},</if>
+            <if test="maximum2 != null">maximum2 = #{maximum2},</if>
+            <if test="minimum2 != null">minimum2 = #{minimum2},</if>
+            <if test="maximum3 != null">maximum3 = #{maximum3},</if>
+            <if test="minimum3 != null">minimum3 = #{minimum3},</if>
+            <if test="show != null">`show` = #{show},</if>
+        </set>
+        where thresholdValueId = #{thresholdValueId}
+  </update>
+
+  <insert id="insertThreshold" parameterType="com.th.system.po.SysThresholdValue">
+    insert into sys_thresholdvalue
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="modelId != null">
+        modelId,
+      </if>
+      <if test="maximum1 != null">
+        maximum1,
+      </if>     
+      <if test="minimum1 != null">
+        minimum1,
+      </if>
+      <if test="maximum2 != null">
+        maximum2,
+      </if>
+      <if test="minimum2 != null">
+        minimum2,
+      </if>
+       <if test="maximum3 != null">
+        maximum3,
+      </if>
+      <if test="minimum3 != null">
+        minimum3,
+      </if>
+      <if test="measureId != null">
+        measureId,
+      </if>
+       <if test="show != null">
+        `show`,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="modelId != null">
+        #{modelId},
+      </if> 
+      <if test="maximum1 != null">
+        #{maximum1},
+      </if>
+      <if test="minimum1 != null">
+        #{minimum1},
+      </if>
+      <if test="maximum2 != null">
+        #{maximum2},
+      </if>
+      <if test="minimum2 != null">
+        #{minimum2},
+      </if>
+      <if test="maximum3 != null">
+        #{maximum3},
+      </if>
+      <if test="minimum3 != null">
+        #{minimum3},
+      </if>
+      <if test="measureId != null">
+        #{measureId},
+      </if>
+      <if test="show != null">
+        #{show},
+      </if>
+    </trim>
+  </insert>
+
+</mapper>

@@ -1,0 +1,363 @@
+package com.yy.common.utils;
+
+import org.apache.tomcat.util.codec.binary.Base64;
+
+public class Convert {
+
+	static final String HEXES = "0123456789ABCDEF";
+
+	public static short bytesToShort(byte[] b) {
+		return (short) (b[0 + 1] & 0xff | (b[0] & 0xff) << 8);
+	}
+
+	public static int bytesToInt(byte[] b) {
+		int n = 0;
+		for (int i = 0; i < 4; i++) {
+			int shift = (4 - 1 - i) * 8;
+			n += (b[i] & 0x000000FF) << shift;
+		}
+		return n;
+	}
+
+	/**
+	 * ��intתΪ���ֽ���ǰ�����ֽ��ں��byte���顣
+	 */
+	public static byte[] intToBytesHH(int n) {
+		byte[] b = new byte[4];
+		b[3] = (byte) (n & 0xff);
+		b[2] = (byte) (n >> 8 & 0xff);
+		b[1] = (byte) (n >> 16 & 0xff);
+		b[0] = (byte) (n >> 24 & 0xff);
+		return b;
+	}
+
+	/**
+	 * �����ֽ�����ת��Ϊint
+	 */
+	public static int bytesHHToInt(byte[] b) {
+		int n = 0;
+		for (int i = 0; i < 3; i++) {
+			if (b[0] >= 0) {
+				n = n + b[0];
+			} else {
+				n = n + 256 + b[0];
+			}
+			n = n * 256;
+		}
+		if (b[3] >= 0) {
+			n = n + b[3];
+		} else {
+			n = n + 256 + b[3];
+		}
+		return n;
+
+	}
+
+	/**
+	 * ��intתΪ���ֽ���ǰ�����ֽ��ں��byte���顣
+	 */
+	public static byte[] intToBytesLH(int n) {
+		byte[] b = new byte[4];
+		b[0] = (byte) (n & 0xff);
+		b[1] = (byte) (n >> 8 & 0xff);
+		b[2] = (byte) (n >> 16 & 0xff);
+		b[3] = (byte) (n >> 24 & 0xff);
+		return b;
+	}
+
+	/**
+	 * �����ֽ�����ת��Ϊint
+	 */
+	public static int bytesLHToInt(byte[] b) {
+		int n = 0;
+		for (int i = 0; i < 3; i++) {
+			if (b[3 - i] >= 0) {
+				n = n + b[3 - i];
+			} else {
+				n = n + 256 + b[3 - i];
+			}
+			n = n * 256;
+		}
+		if (b[0] >= 0) {
+			n = n + b[0];
+		} else {
+			n = n + 256 + b[0];
+		}
+		return n;
+	}
+
+	/**
+	 * ��shortתΪ���ֽ���ǰ�����ֽ��ں��byte���顣
+	 */
+	public static byte[] shortToBytesHH(short n) {
+		byte[] b = new byte[2];
+		b[0] = (byte) (n >> 8 & 0xff);
+		b[1] = (byte) (n & 0xff);
+		return b;
+	}
+
+	/**
+	 * �����ֽ�����ת��Ϊshort
+	 */
+	public static short bytesHHToShort(byte[] b) {
+		int n = 0;
+		if (b[0] >= 0) {
+			n = n + b[0];
+		} else {
+			n = n + 256 + b[0];
+		}
+		n = n * 256;
+		if (b[1] >= 0) {
+			n = n + b[1];
+		} else {
+			n = n + 256 + b[1];
+		}
+		return (short) n;
+	}
+
+	/**
+	 * ��shortתΪ���ֽ���ǰ�����ֽ��ں��byte���顣
+	 */
+	public static byte[] shortToBytesLH(short n) {
+		byte[] b = new byte[2];
+		b[0] = (byte) (n & 0xff);
+		b[1] = (byte) (n >> 8 & 0xff);
+		return b;
+	}
+
+	/**
+	 * �����ֽ�����ת��Ϊshort
+	 */
+	public static short bytesLHToShort(byte[] b) {
+		int n = 0;
+		if (b[1] >= 0) {
+			n = n + b[1];
+		} else {
+			n = n + 256 + b[1];
+		}
+		n = n * 256;
+		if (b[0] >= 0) {
+			n = n + b[0];
+		} else {
+			n = n + 256 + b[0];
+		}
+		return (short) n;
+	}
+
+	/**
+	 * ��floatתΪ���ֽ���ǰ�����ֽ��ں��byte���顣
+	 */
+	public static byte[] floatToBytesHH(float f) {
+		return intToBytesHH(Float.floatToRawIntBits(f));
+	}
+
+	/**
+	 * �����ֽ�����ת��Ϊfloat
+	 */
+	public static float bytesHHToFloat(byte[] b) {
+		int i = ((((b[0] & 0xff) << 8 | (b[1] & 0xff)) << 8) | (b[2] & 0xff)) << 8 | (b[3] & 0xff);
+		return Float.intBitsToFloat(i);
+	}
+
+	/**
+	 * ��floatתΪ���ֽ���ǰ�����ֽ��ں��byte���顣
+	 */
+	public static byte[] floatToBytesLH(float f) {
+		return intToBytesLH(Float.floatToRawIntBits(f));
+	}
+
+	public static float bytesLHToFloat(byte[] b) {
+		int i = ((((b[3] & 0xff) << 8 | (b[2] & 0xff)) << 8) | (b[1] & 0xff)) << 8 | (b[0] & 0xff);
+		return Float.intBitsToFloat(i);
+	}
+
+	/**
+	 * ���ַ�ת��Ϊbyte����
+	 */
+	public static byte[] stringToBytes(String s) {
+		return s.getBytes();
+	}
+
+	/**
+	 * ���ֽ�����ת��ΪString
+	 */
+	public static String bytesToString(byte[] b) {
+		StringBuffer result = new StringBuffer("");
+		int length = b.length;
+		for (int i = 0; i < length; i++) {
+			result.append((char) (b[i] & 0xff));
+		}
+		return result.toString();
+	}
+
+	public static String toHexString(byte[] data) {
+		if (data == null) {
+			return null;
+		}
+		final StringBuilder hex = new StringBuilder(2 * data.length);
+		for (final byte b : data) {
+			hex.append(HEXES.charAt((b & 0xF0) >> 4)).append(HEXES.charAt((b & 0x0F)));
+		}
+		return hex.toString();
+	}
+
+	public static byte[] fromHexString(String data) {
+		if (data.length() % 2 != 0) {
+			return null;
+		}
+		byte[] out = new byte[data.length() / 2];
+		for (int i = 0; i < data.length() / 2; i++) {
+			int b1 = HEXES.indexOf(data.charAt(2 * i));
+			int b2 = HEXES.indexOf(data.charAt(2 * i + 1));
+			out[i] = (byte) (b1 * 16 + b2);
+		}
+		return out;
+	}
+
+	public static int byteToInt(byte[] b) {
+		int s = 0;
+		int s0 = b[0] & 0xff;// ���λ
+		int s1 = b[1] & 0xff;
+		int s2 = b[2] & 0xff;
+		int s3 = b[3] & 0xff;
+		s3 <<= 24;
+		s2 <<= 16;
+		s1 <<= 8;
+		s = s0 | s1 | s2 | s3;
+		return s;
+	}
+
+	/**
+	 * @param args
+	 */
+	public static void main(String args[]) {
+		// byte[] sl_ = Convert.intToBytesHH(257);
+		// for (byte bb : sl_) {
+		// System.out.println((byte) bb);
+		// }
+		// System.out.println();
+		int s1 = (byte) 130 & 0xff;
+		// System.out.println(s1);
+		byte[] b = { (byte) 0x64, (byte) 0x0, (byte) 0x0, (byte) 0x1 };
+		System.out.println(Convert.bytesToInt(b));
+		System.out.println(Convert.byte2HexStrNoSpace(Convert.intToBytesHH(Integer.parseInt("637534521")), 0, 4));
+		// System.out.println(Integer.parseInt("0007df", 16));
+		// for (byte bb : intToBytesHH(2015)) {
+		// // System.out.println((byte) bb);
+		// }
+		// System.out.println(Convert.byte2HexStrNoSpace(
+		// Convert.intToBytesHH(Integer.parseInt("1677725986")), 0, 4));
+		// System.out.println("base64：" + byte2Base64StringFun(b));
+		// System.out
+		// .println("byte："
+		// + getHexString(
+		// base64String2ByteFun(byte2Base64StringFun(b)),
+		// 8));
+	}
+
+	public static byte getXor(byte[] datas) {
+
+		byte temp = datas[0];
+
+		for (int i = 1; i < datas.length; i++) {
+			temp ^= datas[i];
+		}
+
+		return temp;
+	}
+
+	/**
+	 * bytes转换成十六进制字符串
+	 */
+	public static String byte2HexStr(byte[] b, int beg, int len) {
+		String hs = "";
+		String stmp = "";
+
+		for (int i = beg; i < len; i++) {
+			stmp = (Integer.toHexString(b[i] & 0XFF));
+			if (stmp.length() == 1) {
+				hs = hs + "0" + stmp + ' ';
+			} else {
+				hs = hs + stmp + ' ';
+			}
+		}
+		return hs.toUpperCase();
+	}
+
+	/**
+	 * bytes转换成十六进制字符串
+	 */
+	public static String byte2HexStrNoSpace(byte[] b, int beg, int len) {
+		String hs = "";
+		String stmp = "";
+
+		for (int i = beg; i < len; i++) {
+			stmp = (Integer.toHexString(b[i] & 0XFF));
+			if (stmp.length() == 1) {
+				hs = hs + "0" + stmp;
+			} else {
+				hs = hs + stmp;
+			}
+		}
+		return hs.toUpperCase();
+	}
+
+	// base64字符串转byte[]
+	public static byte[] base64String2ByteFun(String base64Str) {
+		return Base64.decodeBase64(base64Str);
+	}
+
+	// byte[]转base64
+	public static String byte2Base64StringFun(byte[] b) {
+		return Base64.encodeBase64String(b);
+	}
+
+	public static String getHexString(byte[] message, int size) {
+		StringBuffer hex_message = new StringBuffer();
+
+		for (int j = 0; j < message.length; ++j) {
+			if (j == size)
+				break;
+			String a = Integer.toHexString(message[j] & 0xff);
+			if (a.length() == 1) {
+				a = "0" + a;
+			}
+			hex_message.append(a);
+		}
+		if (hex_message.toString().length() > 50) {
+			hex_message = new StringBuffer();
+		}
+		return hex_message.toString();
+	}
+
+	/**
+	 * 64000001 转成byte数组 {0x64,0,0,0x01}
+	 * 
+	 * @param c
+	 * @return
+	 */
+	public static byte[] str2_2Bytes(String c) {
+		byte[] b = new byte[c.length() / 2];
+		int j = 0;
+		for (int i = 0; i < c.length(); i++) {
+			Integer in = Integer.parseInt(c.substring(i, i + 2), 16);
+			i++;
+			b[j++] = in.byteValue();
+		}
+		return b;
+	}
+
+	/**
+	 * short转无符号整形
+	 * 
+	 * @param data
+	 * @return
+	 */
+	public static int getUnsignedShort(short data) {
+		return data & 0xFFFF;
+	}
+
+	public static int getUnsigned(byte data) {
+		return data & 0xFF;
+	}
+}

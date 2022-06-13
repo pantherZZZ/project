@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysProjectMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysProject">
+    <id column="projectId" property="projectId" />
+    <result column="projectName" property="projectName" />
+ 	<result column="userId" property="userId" />
+ 	<result column="time" property="time" />
+ 	<result column="show" property="show" />
+ 	<result column="creationTime" property="creationTime" />
+ 	<result column="type" property="type" />
+  </resultMap>
+
+  <sql id="Base_List">
+    projectId, projectName, userId,time,creationTime
+  </sql>
+  
+   <select id="findByProjectIdPro" resultType="com.th.system.vo.UserVo" parameterType="java.lang.String">
+		select p.projectName as projectName,p.userId as userId,p.projectId as projectId
+		,p.time as time
+		,u.userName as userName
+		from sys_project as p
+		inner join sys_user as u
+		on u.userId = p.userId
+		and p.projectId = #{projectId}
+  </select>
+  
+  <select id="findYearTime" resultType="java.lang.Integer" parameterType="java.lang.String">
+		select count(projectId)
+		from sys_project
+		where `show` = "2"
+		and time like concat('%',#{time},'%')
+  </select>
+  
+  <select id="findWeekTime" resultType="java.lang.Integer" parameterType="java.lang.String">
+		select count(projectId)
+		from sys_project
+		where `show` = "2"
+		and time &lt;= #{time1}
+		and time &gt;= #{time2}
+  </select>
+  
+  <select id="findByProjectId" resultType="com.th.system.vo.UserVo">
+		select p.projectName as projectName,p.userId as userId,p.projectId as projectId
+		,m.modelId as modelId,m.modelName as modelName,m.purpose as purpose
+		,m.gist as gist,m.`describe` as `describe`,p.time as time
+		,u.userName as userName
+		from sys_project as p
+		inner join sys_project_model as s
+		on s.projectId = p.projectId
+		inner join sys_model as m
+		on m.modelId = s.modelId
+		inner join sys_user as u
+		on u.userId = p.userId
+		and p.projectId = #{projectId}
+  </select>
+  
+  <select id="findByProjectIdAir" resultType="com.th.system.po.SysUser" >
+		select u.userId	,u.userName
+		from sys_project as p
+		inner join sys_user as u
+		on u.userId = p.userId
+		and p.projectId = #{projectId}
+  </select>
+  
+    <select id="findByUseridPro" resultType="com.th.system.po.SysProject" >
+		select p.projectId,p.projectName,
+		p.userId,p.time,p.creationTime,p.type,
+		u.userName
+		from sys_project as p
+		inner join sys_user as u
+		on u.userId = p.userId
+		<where>
+			`show` != '1'
+			<if test="userId != null">
+				and u.userId = #{userId}
+			</if>
+			<if test="projectName != null and projectName != '' ">
+				and projectName like concat('%',#{projectName},'%')
+			</if>
+			<if test="type != null and type != '' ">
+				and type like concat('%',#{type},'%')
+			</if>
+			group by(projectId)
+			<if test="val != null">
+				LIMIT #{limit},#{size}
+			</if>
+		</where>
+  </select>
+  
+  <select id="findByUserid" resultType="com.th.system.vo.SysProjectVo">
+		select p.projectName as projectName,p.userId as userId,p.projectId as projectId
+		,m.modelId as modelId,m.modelName as modelName,m.coordinateX as coordinateX,
+		m.coordinateY as coordinateY,m.purpose as purpose
+		,m.gist as gist,m.sketchMap as sketchMap,m.`describe` as `describe`,
+		<!-- l.pictureName as pictureName,l.picturePath as picturePath, -->
+		p.time as time
+		from sys_project as p
+		inner join sys_project_model as s
+		on s.projectId = p.projectId
+		inner join sys_model as m
+		on m.modelId = s.modelId
+		inner join sys_user as u
+		on u.userId = p.userId
+		<!-- inner join sys_pathlist as l
+		on l.pictureId = m.sketchMap -->
+		<where>
+			p.`show` != "1"
+			<if test="userId != null">
+				and u.userId = #{userId}
+			</if>
+			<if test="projectName != null">
+				and p.projectName like concat('%',#{projectName},'%')
+			</if>
+			group by(p.projectId)
+			<if test="val != null">
+				LIMIT #{limit},#{size}
+			</if>
+		</where>
+  </select>
+  
+  <select id="findByName" resultType="com.th.system.vo.SysProjectVo">
+			select p.projectName as projectName,p.userId as userId,p.projectId as projectId
+			,m.modelId as modelId,m.modelName as modelName,m.coordinateX as coordinateX,
+			m.coordinateY as coordinateY,m.purpose as purpose
+			,m.gist as gist,m.sketchMap as sketchMap,m.`describe` as `describe`
+			,l.pictureName as pictureName,l.picturePath as picturePath
+			from sys_project as p
+			inner join sys_project_model as s
+			on s.projectId = p.projectId
+			inner join sys_model as m
+			on m.modelId = s.modelId
+			inner join sys_user as u
+			on u.userId = p.userId
+			inner join sys_pathlist as l
+			on l.pictureId = m.sketchMap
+			<where>
+				1=1
+				<if test="userId != null">
+					and u.userId = #{userId}
+				</if>
+				<if test="projectName != null">
+					and p.projectName like concat('%',#{projectName},'%')
+				</if>
+				group by(p.projectId)
+				<if test="val != null">
+					LIMIT #{limit},#{size}
+				</if>
+			</where>
+  </select>
+  
+  <update id="updateProject" parameterType="com.th.system.po.SysProject">
+        update sys_project
+        <set>
+            <if test="projectName != null">`projectName` = #{projectName},</if>
+            <if test="time != null">`time` = #{time},</if>
+            <if test="userId != null">`userId` = #{userId}</if>
+            <if test="type != null">`type` = #{type}</if>
+        </set>
+        where projectId = #{projectId}
+  </update>
+  
+  <select id="findCount" resultType="java.lang.Integer">
+		select count(projectId) from sys_project
+  </select>
+  
+  <delete id="delProject" parameterType="java.lang.Integer">
+  	DELETE from sys_project
+  	where projectId = #{projectId}
+  </delete>
+  
+  <insert id="insertProject" parameterType="com.th.system.po.SysProject">
+    insert into sys_project
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="projectName != null">
+        projectName,
+      </if>
+       <if test="userId != null">
+        userId,
+      </if>
+       <if test="time != null">
+        time,
+      </if>
+      <if test="show != null">
+        `show`,
+      </if>
+      <if test="creationTime != null">
+        `creationTime`,
+      </if>
+		type
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="projectName != null">
+        #{projectName},
+      </if> 
+      <if test="userId != null">
+        #{userId},
+      </if>
+       <if test="time != null">
+        #{time},
+      </if>
+       <if test="show != null">
+        #{show},
+      </if>
+       <if test="creationTime != null">
+        #{creationTime},
+      </if>
+		<if test="type != null">
+			#{type},
+		</if>
+    </trim>
+  </insert>
+
+	<select id="findModelByProjectId" resultType="com.th.system.po.ModelNameVo">
+		SELECT
+		sm.modelId modelId,sm.modelName modelName
+        FROM  sys_project sp
+        LEFT JOIN  sys_project_model spm ON sp.projectId=spm.projectId
+        LEFT JOIN sys_model sm  ON sm.modelId=spm.modelId
+        WHERE
+        1=1
+		<if test="projectId != null and projectId  != ''">
+			and sp.projectId=#{projectId}
+		</if>
+	</select>
+  
+</mapper>

@@ -1,0 +1,74 @@
+package com.yy.data.model;
+
+import java.io.Serializable;
+
+public class NbMessSend implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8467795341818500714L;
+	private String id;//
+	private String senddate;// nb发送时间格式2018-07-26 17:42:56:SSS
+	private String equid;// 设备id
+	private String opencmd;// "1":开启指令
+	private String mess;// byte数组的base字符
+	private String userid;// 开锁用户id
+	private String reason;// 开锁原因
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getSenddate() {
+		return senddate;
+	}
+
+	public void setSenddate(String senddate) {
+		this.senddate = senddate;
+	}
+
+	public String getEquid() {
+		return equid;
+	}
+
+	public void setEquid(String equid) {
+		this.equid = equid;
+	}
+
+	public String getOpencmd() {
+		return opencmd;
+	}
+
+	public void setOpencmd(String opencmd) {
+		this.opencmd = opencmd;
+	}
+
+	public String getMess() {
+		return mess;
+	}
+
+	public void setMess(String mess) {
+		this.mess = mess;
+	}
+
+	public String getUserid() {
+		return userid;
+	}
+
+	public void setUserid(String userid) {
+		this.userid = userid;
+	}
+
+	public String getReason() {
+		return reason;
+	}
+
+	public void setReason(String reason) {
+		this.reason = reason;
+	}
+
+}

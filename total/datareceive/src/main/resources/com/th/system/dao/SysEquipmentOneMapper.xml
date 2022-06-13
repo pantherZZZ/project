@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.th.system.dao.SysEquipmentOneMapper">
+    <select id="findByEquipmentName" resultType="com.th.system.vo.SysEquipmentVo">
+      SELECT   se.equipmentId equipmentId,  se.equipmentName equipmentName, se.modelId modelId, se.sensor_type portId,
+                p.plant_name plantName,  p.plant_id plantId,
+                t.type_name typeName,  t.type_id typeId,
+                m.modelNumber_name modelNumberName,  m.modelNumber_id modelNumberId,
+	            sd.dtuName dtuName,  sd.DTUid dtuId,
+                ss.strategyName strategyName, ss.strategyId strategyId
+        FROM sys_equipment se
+        LEFT JOIN  sys_dtu_plant p ON se.plantId=p.plant_id
+        LEFT JOIN  sys_dtu_type t  ON  se.typeId=t.type_id
+        LEFT JOIN  sys_dtu_modelNumber m  ON  se.specification=m.modelNumber_id
+        LEFT JOIN  sys_strategy ss ON ss.strategyId=se.strategyId
+        LEFT JOIN  sys_dtu sd  ON sd.DTUid=se.dtuId
+        WHERE
+        1=1
+        <if test="equipmentName != null and equipmentName != '' ">
+        AND se.equipmentName LIKE  CONCAT(#{equipmentName},'%')
+        </if>
+        <if test="modelId != null and modelId != '' ">
+        AND se.modelId=#{modelId}
+        </if>
+    </select>
+
+    <select id="findEquipmentCount" resultType="java.lang.Long">
+        SELECT count(1)
+        FROM sys_equipment se
+        LEFT JOIN  sys_dtu_plant p ON se.plantId=p.plant_id
+        LEFT JOIN  sys_dtu_type t  ON  se.typeId=t.type_id
+        LEFT JOIN  sys_dtu_modelNumber m  ON  se.specification=m.modelNumber_id
+        LEFT JOIN  sys_strategy ss ON ss.strategyId=se.strategyId
+        LEFT JOIN  sys_dtu sd  ON sd.DTUid=se.dtuId
+        WHERE
+        1=1
+        <if test="equipmentName != null and equipmentName != '' ">
+            AND se.equipmentName LIKE  CONCAT(#{equipmentName},'%')
+        </if>
+        <if test="modelId != null and modelId != '' ">
+            AND se.modelId=#{modelId}
+        </if>
+    </select>
+
+    <select id="findEquipmentName" resultType="com.th.system.vo.SysEquipmentNameVo">
+        SELECT se.equipmentId,se.equipmentName
+          FROM sys_equipment se
+          WHERE
+        <if test="modelId != null">
+            se.modelId=#{modelId}
+        </if>
+    </select>
+</mapper>
+
+

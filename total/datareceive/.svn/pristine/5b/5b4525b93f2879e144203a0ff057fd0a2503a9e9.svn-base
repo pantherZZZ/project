@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yy.data.dao.DeviceDataInfoMapper">
+
+  <resultMap id="BaseResultMap" type="com.yy.data.model.DeviceDataInfo">
+    <id column="datainfoid" jdbcType="VARCHAR" property="datainfoid" />
+    <result column="deviceid" jdbcType="VARCHAR" property="deviceid" />
+    <result column="datatime" jdbcType="VARCHAR" property="datatime" />
+    <result column="hisdata" jdbcType="VARCHAR" property="hisdata" />
+    <result column="datacontent" jdbcType="VARCHAR" property="datacontent" />
+    <result column="isSend" jdbcType="VARCHAR" property="isSend" />
+  </resultMap>
+  
+	<sql id="Base_Column_List">
+		datainfoid, deviceid,datatime,hisdata,datacontent,isSend
+	</sql>
+	
+   <insert id="saveDeviceDataInfo" parameterType="com.yy.data.model.DeviceDataInfo">
+    insert into device_data
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="datainfoid != null">
+        datainfoid,
+      </if>
+      <if test="deviceid != null">
+        deviceid,
+      </if>
+      <if test="datatime != null">
+        datatime,
+      </if>
+      <if test="datacontent != null">
+        datacontent,
+      </if>
+      <if test="hisdata != null">
+        hisdata,
+      </if>
+      <if test="isSend != null">
+        isSend,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="datainfoid != null">
+        #{datainfoid,jdbcType=VARCHAR},
+      </if>
+      <if test="deviceid != null">
+        #{deviceid,jdbcType=VARCHAR},
+      </if>
+      <if test="datatime != null">
+        #{datatime,jdbcType=VARCHAR},
+      </if>
+      <if test="datacontent != null">
+        #{datacontent,jdbcType=VARCHAR},
+      </if>
+      <if test="hisdata != null">
+        #{hisdata,jdbcType=VARCHAR},
+      </if>
+       <if test="isSend != null">
+        #{isSend,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+	
+	
+	
+</mapper>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.StrategyListMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.StrategyList">
+    <id column="id" property="id" />
+    <result column="title" property="title" />
+    <result column="ste" property="ste" />
+    <result column="time" property="time" />
+    <result column="light" property="light" />
+    <result column="modelId" property="modelId" />
+  </resultMap>
+
+  <sql id="Base_List">
+    id, title,`time`,ste,light,modelId
+  </sql>
+
+</mapper>

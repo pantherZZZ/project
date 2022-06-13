@@ -1,0 +1,180 @@
+package com.yy.common.utils;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import com.yy.common.constant.MyConstants;
+
+public class ExcelUtil {
+
+	public String genExcel(String sheetname, List<String> titles, List<Object[]> datas) throws IOException {
+		HSSFWorkbook workbook = new HSSFWorkbook();
+		if (StringUtils.isBlank(sheetname)) {
+			sheetname = "1";
+		}
+		HSSFSheet sheet = workbook.createSheet(sheetname);
+		// 生成一个样式
+		HSSFCellStyle style = workbook.createCellStyle();
+		// 设置这些样式
+		style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
+
+		style.setBorderBottom(HSSFCellStyle.BORDER_THIN); // 下边框
+		style.setBorderLeft(HSSFCellStyle.BORDER_THIN);// 左边框
+		style.setBorderTop(HSSFCellStyle.BORDER_THIN);// 上边框
+		style.setBorderRight(HSSFCellStyle.BORDER_THIN);// 右边框
+		int colums = 0;// 最大列数
+		short row_index = 0;// 第一行
+		HSSFRow row = null;
+		HSSFCell cell = null;
+		int x_id = 0;
+		row = sheet.createRow(row_index++);
+		for (String title : titles) {
+			cell = row.createCell(x_id++);
+			cell.setCellValue(title);
+			colums++;
+		}
+		for (Object[] obs : datas) {
+			row = sheet.createRow(row_index++);
+			x_id = 0;
+			for (Object ob : obs) {
+
+				cell = row.createCell(x_id++);
+				cell.setCellStyle(style);
+				if (StringUtils.isBlank(String.valueOf(ob)) || "null".equals(String.valueOf(ob))) {
+					cell.setCellValue("");
+				} else {
+					cell.setCellValue(String.valueOf(ob));
+				}
+
+			}
+		}
+		FileOutputStream os = null;
+		long a = new java.util.Date().getTime();
+		String r = String.valueOf(a);
+		String path = MyConstants.TEMPFILEPATH + "/" + r + ".xls";
+
+		os = new FileOutputStream(path);
+		workbook.write(os);
+		os.flush();
+		os.close();
+		return path;
+
+	}
+
+	/**
+	 * 
+	 * @param beginRow  开始行号，从0开始
+	 * @param columSize 最大列数
+	 * @param fileName  文件名称，主要判断excel版本
+	 * @param is        流
+	 * @return
+	 */
+	public List<List<String>> readOrgData(int beginRow, int columSize, String fileName, InputStream is) {
+		List<List<String>> resultList = new ArrayList<List<String>>();
+		try {
+			Workbook workbook = null;
+			boolean is07 = true;
+			if (fileName.toLowerCase().endsWith("xlsx")) {
+				workbook = new XSSFWorkbook(is);
+			} else if (fileName.toLowerCase().endsWith("xls")) {
+				workbook = new HSSFWorkbook(is);
+				is07 = false;
+			}
+			Sheet sheet = workbook.getSheetAt(0);// sheet索引
+			Iterator<Row> rowIterator = sheet.iterator();
+			int row_num = 0;
+
+			while (rowIterator.hasNext()) {
+				Row row = null;
+				if (is07) {
+					row = (XSSFRow) rowIterator.next();
+				} else {
+					row = (HSSFRow) rowIterator.next();
+				}
+				if (row_num < beginRow) {
+					row_num++;
+					continue;
+				}
+				List<String> list = new ArrayList<String>();
+				String firstColum = null;
+				for (int i = 0; i < columSize; i++) {
+					if (i == 0) {
+						firstColum = returnCellValue_(row.getCell(i), is07, Cell.CELL_TYPE_STRING).trim();
+					}
+					list.add(returnCellValue_(row.getCell(i), is07, Cell.CELL_TYPE_STRING).trim());
+				}
+				if (StringUtils.isBlank(firstColum)) {
+					continue;
+				}
+				resultList.add(list);
+			} // end of rows iterator
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			// close file input stream
+			try {
+				is.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return resultList;
+
+	}
+
+	// 通用
+	private String returnCellValue_(Cell cell, boolean is07, Integer cell_type) {
+
+		if (cell == null)
+			return "";
+		if (is07) {
+			cell = (XSSFCell) cell;
+		} else {
+			cell = (HSSFCell) cell;
+		}
+		if (cell_type != null) {
+			cell.setCellType(cell_type);
+		}
+		switch (cell.getCellType()) {
+		case Cell.CELL_TYPE_NUMERIC:
+			if (org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell)) {
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+				return sdf.format(org.apache.poi.ss.usermodel.DateUtil.getJavaDate(cell.getNumericCellValue()))
+						.toString();
+			}
+			return cell.toString();
+		case Cell.CELL_TYPE_STRING:
+			return cell.getStringCellValue();
+		case Cell.CELL_TYPE_FORMULA:
+			return cell.getCellFormula();
+		case Cell.CELL_TYPE_BLANK:
+			return "";
+		case Cell.CELL_TYPE_BOOLEAN:
+			return cell.getBooleanCellValue() + "";
+		case Cell.CELL_TYPE_ERROR:
+			return cell.getErrorCellValue() + "";
+		}
+		return "";
+	}
+
+}

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysCautionMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysCaution">
+    <id column="cautionId" property="cautionId" />
+    <result column="modelId" property="modelId" />
+    <result column="cautionSource" property="cautionSource" />
+    <result column="cautionGrade" property="cautionGrade" />
+    <result column="count" property="count" />
+    <result column="cautionMessage" property="cautionMessage" />
+    <result column="produceTime" property="produceTime" />
+    <result column="updateTime" property="updateTime" />
+    <result column="situation" property="situation" />
+  </resultMap>
+	
+  <sql id="Base_List">
+    cautionId, modelId, cautionSource, cautionGrade,count,cautionMessage,produceTime,updateTime,situation
+  </sql>
+  
+   <select id="findCautionTime" resultMap="BaseMap" parameterType="java.lang.String">
+		select <include refid="Base_List" /> from sys_caution
+		where produceTime like concat('%',#{produceTime},'%')
+  </select>
+  
+   <select id="findCount" resultType="java.lang.Integer">
+		select count(cautionId) from sys_caution
+  </select>
+  
+  <select id="findModelCount" resultType="java.lang.Integer">
+		select count(cautionId) from sys_caution
+		where modelId = #{modelId}
+  </select>
+  
+    <select id="findCautionDate" resultType="com.th.system.vo.SysCantionVo">
+		select 	c.cautionId,c.cautionMessage,e.number
+		,c.produceTime,p.projectName
+		,CONCAT(p.projectName,a.measureName) as measureName  from 
+		sys_caution as c
+		inner join sys_model as m
+		on m.modelId = c.modelId
+		inner join sys_measure as a
+		on c.cautionSource = a.measureId
+		inner join sys_equipment as e
+		on e.equipmentId = a.equipmentId
+		join sys_project_model as s
+		on s.modelId = m.modelId
+		join sys_project as p
+		on p.projectId = s.projectId
+		and c.situation = "0"
+		and p.show = "2"
+		group by(c.cautionId)
+		LIMIT 0,5
+   </select>
+  
+   <update id="updateCaution">
+        update sys_caution
+        <set>
+           situation = "1"
+        </set>
+        where cautionId = #{cautionId}
+  </update>
+  
+  <select id="findByUserCantion" resultType="com.th.system.vo.SysCantionVo">
+			select c.cautionId,d.modelName,c.cautionGrade,c.cautionMessage,c.produceTime,c.updateTime,c.situation
+			,m.measureName from 
+			sys_caution as c 
+			inner join sys_measure as m
+			on c.cautionSource = m.measureId
+			inner join sys_model as d
+			on d.modelId = c.modelId
+			inner join sys_project_model  as s
+			on s.modelId = c.modelId
+			inner join sys_project as p
+			on p.projectId = s.projectId
+			<if test="userid != null">
+		      and  p.userId = #{userid}
+		    </if>
+		    <if test="modelName != null and modelName != ''">
+		      and  d.modelName like concat('%',#{modelName},'%')
+		    </if>
+		    <if test="measureName != null and measureName != ''">
+		      and  m.measureName like concat('%',#{measureName},'%')
+		    </if>
+		    <if test="cautionGrade != null and cautionGrade != ''">
+		      and  c.cautionGrade = #{cautionGrade}
+		    </if>
+		    group by(c.cautionId)
+		    LIMIT #{page},#{limit}
+  </select>
+  
+   <delete id="delCantion">
+  	DELETE from sys_caution
+  	where cautionId = #{cautionId}
+  </delete>
+  
+  <insert id="insertCaution" parameterType="com.th.system.po.SysCaution">
+    insert into sys_caution
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="modelId != null">
+        modelId,
+      </if>
+       <if test="cautionSource != null">
+        cautionSource,
+      </if>
+      <if test="cautionGrade != null">
+        cautionGrade,
+      </if>     
+      <if test="cautionMessage != null">
+        cautionMessage,
+      </if>
+      <if test="produceTime != null">
+        produceTime,
+      </if>
+      <if test="updateTime != null">
+        updateTime,
+      </if>
+      <if test="situation != null">
+        situation,
+      </if>
+      <if test="count != null">
+        `count`,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="modelId != null">
+        #{modelId},
+      </if> 
+      <if test="cautionSource != null">
+        #{cautionSource},
+      </if> 
+      <if test="cautionGrade != null">
+        #{cautionGrade},
+      </if>
+      <if test="cautionMessage != null">
+        #{cautionMessage},
+      </if>
+      <if test="produceTime != null">
+        #{produceTime},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime},
+      </if>
+      <if test="situation != null">
+        #{situation},
+      </if>
+      <if test="count != null">
+        #{count},
+      </if>
+    </trim>
+  </insert>
+
+</mapper>

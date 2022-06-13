@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysModelMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysModel">
+    <id column="modelId" property="modelId" />
+    <result column="modelName" property="modelName" />
+    <result column="coordinateX" property="coordinateX" />
+    <result column="coordinateY" property="coordinateY" />
+    <result column="purpose" property="purpose" />
+    <result column="gist" property="gist" />
+    <result column="sketchMap" property="sketchMap" />
+    <result column="describe" property="describe" />
+    <result column="isBinding" property="isBinding" />
+    <result column="userId" property="userId" />
+    <result column="detectionTypeId" property="detectionTypeId" />
+    <result column="address" property="address" />
+    <result column="lnglat" property="lnglat" />
+    <result column="longitude" property="longitude" />
+    <result column="latitude" property="latitude" />
+  </resultMap>
+
+  <sql id="Base_List">
+    detectionTypeId,lnglat,modelId,address, modelName, coordinateX, coordinateY, purpose,gist,sketchMap,`describe`,isBinding,userId
+  </sql>
+  
+   <select id="findByProjectIdPro" resultType="com.th.system.vo.UserVo">
+		select p.projectName,p.userId,p.projectId,m.modelId as modelId,
+		m.modelName as modelName,m.purpose
+		,m.gist,m.`describe`,p.time ,u.userName 
+		from sys_model as m 
+		join sys_project_model as s on s.modelId = m.modelId
+	    join sys_project as p  on p.projectId = s.projectId
+		join sys_user as u
+		on u.userId = p.userId
+		and p.projectId = #{projectId}
+  </select>
+  
+  <select id="showModelId" resultType="java.lang.String">
+		select modelId
+		from sys_model
+		where modelName = #{modelName}
+		and userid = #{userid}
+		and address = #{address}
+		and detectionTypeId = #{detectionTypeId}
+		and coordinateX = #{coordinateX}
+		and coordinateY = #{coordinateY}
+		LIMIT 0,1
+  </select>
+  
+  <update id="updateMoele" parameterType="com.th.system.po.SysModel">
+        update sys_model
+        <set>
+            <if test="modelName != null">`modelName` = #{modelName},</if>
+            <if test="coordinateX != null">`coordinateX` = #{coordinateX},</if>
+            <if test="coordinateY != null">coordinateY = #{coordinateY},</if>
+            <if test="purpose != null">`purpose` = #{purpose},</if>
+            <if test="gist != null">`gist` = #{gist},</if>
+            <if test="sketchMap != null">`sketchMap` = #{sketchMap},</if>
+            <if test="describe != null">`describe` = #{describe},</if>
+            <if test="isBinding != null">`isBinding` = #{isBinding},</if>
+            <if test="userId != null">`userId` = #{userId},</if>
+            <if test="address != null">`address` = #{address},</if>
+            <if test="longitude != null">`longitude` = #{longitude},</if>
+            <if test="latitude != null">`latitude` = #{latitude},</if>
+
+        </set>
+        where modelId = #{modelId}
+  </update>
+  
+   <select id="findByBindingIsNot" resultMap="BaseMap">
+		select <include refid="Base_List" /> from sys_model
+		<where>
+			isBinding = '1'
+			<if test="userId != null">and userId = #{userId}</if>
+		</where>
+  </select>
+  
+  <select id="findAddress" resultType="java.lang.Integer" parameterType="java.lang.String">
+		select count(modelId) from sys_model
+		where address like concat('%',#{address},'%')
+  </select>
+  
+  <select id="findAll" resultMap="BaseMap" parameterType="java.lang.String">
+		select <include refid="Base_List" /> from sys_model
+  </select>
+  
+   <select id="findCount" resultType="java.lang.Integer">
+		select count(modelId) from sys_model
+  </select>
+  
+   <select id="findByProjectId" resultType="com.th.system.vo.SysModelVo">
+		select m.modelId as modelId, m.modelName as modelName,
+		 m.coordinateX as coordinateX, m.coordinateY as coordinateY,  
+		m.purpose,m.gist,m.sketchMap,m.`describe`
+		from sys_model as m
+		inner join
+		sys_project_model as p 
+		on m.modelId = p.modelId
+       WHERE
+       <if test="projectId != null">
+		 p.projectId = #{projectId}
+       </if>
+		<if test="modelName != null">
+			and m.modelName like concat('%',#{modelName},'%')
+		</if>
+		<if test="val != null">
+			 LIMIT #{limit},#{size}
+		</if>
+  </select>
+
+   <select id="findByProjectIdAir" resultType="com.th.system.vo.SysModelVo">
+		select distinct m.modelId as modelId, m.modelName as modelName,
+       m.longitude,  m.latitude, m.lnglat alnglat,
+		 m.coordinateX as coordinateX, m.coordinateY as coordinateY,  
+		m.purpose,m.gist,m.sketchMap,m.`describe`,
+		l.pictureName as pictureName,l.picturePath as picturePath
+		,t.detectionTypeName as detectionTypeName,s.projectName as projectName
+		,m.address as address
+		from sys_model as m
+		inner join sys_project_model as p 
+		on m.modelId = p.modelId
+		inner join sys_pathlist as l
+		on l.pictureId = m.sketchMap
+		inner join sys_detectionType as t
+		on t.detectionTypeId = m.detectionTypeId
+		inner join sys_project as s
+		on s.projectId = p.projectId
+			join sys_user as u
+		    on u.userId = s.userId
+		<if test="userId != null">
+		    and u.userId = #{userId}
+		</if>
+		<if test="modelName != null and modelName != ''">
+			and m.modelName like concat('%',#{modelName},'%')
+		</if>
+		group by(m.modelId)
+		<if test="val != null">
+			LIMIT #{page},#{limit}
+		</if>
+  </select>
+
+  <select id="findByModelId" resultType="com.th.system.vo.SysModelVo">
+		select m.modelId as modelId, m.modelName as modelName,
+		 m.coordinateX as coordinateX, m.coordinateY as coordinateY,  
+		m.purpose,m.gist,m.sketchMap,m.`describe`
+		,l.pictureName as pictureName,l.picturePath as picturePath
+		,m.address as address,m.detectionTypeId
+		from sys_model as m
+		inner join sys_pathlist as l
+		on l.pictureId = m.sketchMap
+		<where>
+			<if test="modelId != null">
+				m.modelId = #{modelId}	
+			</if>
+		</where>
+  </select>
+  
+   <select id="findByModelIdPro" resultType="com.th.system.vo.SysModelVo">
+					select m.modelId as modelId, m.modelName as modelName,
+		 m.coordinateX as coordinateX, m.coordinateY as coordinateY,  
+		m.purpose,m.gist,m.sketchMap,m.`describe`
+		,l.pictureName as pictureName,l.picturePath as picturePath
+		,m.address as address,m.detectionTypeId,t.detectionTypeName,
+		m.lnglat as lnglat
+		from sys_model as m
+		inner join sys_pathlist as l
+		on l.pictureId = m.sketchMap
+		inner join sys_detectionType as t
+		on t.detectionTypeId = m.detectionTypeId
+		<where>
+			<if test="modelId != null">
+				m.modelId = #{modelId}	
+			</if>
+		</where>
+  </select>
+  
+  <delete id="delModel">
+  	DELETE from sys_model
+  	where modelId = #{modelId}
+  </delete>
+  
+  <insert id="insertModel" parameterType="com.th.system.po.SysModel">
+    insert into sys_model
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="modelName != null">
+        modelName,
+      </if>
+       <if test="coordinateX != null">
+        coordinateX,
+      </if>
+      <if test="coordinateY != null">
+        coordinateY,
+      </if>     
+      <if test="purpose != null">
+        purpose,
+      </if>
+      <if test="gist != null">
+        gist,
+      </if>
+      <if test="sketchMap != null">
+        sketchMap,
+      </if>
+      <if test="describe != null">
+        `describe`,
+      </if>
+      <if test="isBinding != null">
+        isBinding,
+      </if>
+      <if test="userId != null">
+        userId,
+      </if>
+      <if test="detectionTypeId != null">
+        detectionTypeId,
+      </if>
+       <if test="address != null">
+        address,
+      </if>
+        longitude,
+        latitude
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="modelName != null">
+        #{modelName},
+      </if> 
+      <if test="coordinateX != null">
+        #{coordinateX},
+      </if> 
+      <if test="coordinateY != null">
+        #{coordinateY},
+      </if>
+      <if test="purpose != null">
+        #{purpose},
+      </if>
+      <if test="gist != null">
+        #{gist},
+      </if>
+      <if test="sketchMap != null">
+        #{sketchMap},
+      </if>
+      <if test="describe != null">
+        #{describe},
+      </if>
+       <if test="isBinding != null">
+        #{isBinding},
+      </if>
+      <if test="userId != null">
+        #{userId},
+      </if>
+      <if test="detectionTypeId != null">
+        #{detectionTypeId},
+      </if>
+      <if test="address != null">
+        #{address},
+      </if>
+        <if test="longitude != null">
+            #{longitude},
+        </if>
+
+        <if test="latitude != null">
+            #{latitude},
+        </if>
+    </trim>
+  </insert>
+
+</mapper>

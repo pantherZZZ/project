@@ -1,0 +1,23 @@
+package com.yy.data.udp;
+
+import java.io.IOException;
+
+public class UdpStartThread implements Runnable {
+	int no = 0;
+
+	public UdpStartThread(int no) {
+		this.no = no;
+	}
+
+	@Override
+	public void run() {
+		if (no == 1) {
+			try {
+				UdpStart.startUdp_1();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+}

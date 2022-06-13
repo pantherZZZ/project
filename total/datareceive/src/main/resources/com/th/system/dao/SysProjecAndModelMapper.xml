@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysProjecAndModelMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysProjecAndModel">
+    <result column="projectId" property="projectId" />
+    <result column="modelId" property="modelId" />
+   </resultMap>
+
+  <sql id="Base_List">
+  projectId, modelId
+  </sql>
+	
+   <select id="findBySysProjecId" resultMap="BaseMap">
+		select <include refid="Base_List" /> from sys_project_model
+		where projectId = #{projectId}
+  </select>	
+
+  <select id="findBySysProjecIdPro" resultType="com.th.system.po.SysModel">
+		select <include refid="Base_List" /> from sys_project_model
+		where projectId = #{projectId}
+  </select>	
+
+   <delete id="delect">
+  	DELETE from sys_project_model
+  	<where>
+  	  <if test="modelId != null">
+        modelId = #{modelId}
+      </if>
+      <if test="projectId != null">
+        and projectId = #{projectId}
+      </if>
+  	</where>
+  </delete>
+
+ <insert id="insert" parameterType="com.th.system.po.SysProjecAndModel">
+    insert into sys_project_model
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="projectId != null">
+        projectId,
+      </if>
+       <if test="modelId != null">
+        modelId,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="projectId != null">
+        #{projectId},
+      </if> 
+      <if test="modelId != null">
+        #{modelId},
+      </if>
+    </trim>
+  </insert>
+
+</mapper>

@@ -1,0 +1,415 @@
+package com.yy.common.utils;
+
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
+
+public class DateUtil {
+	private static Log log = LogFactory.getLog(DateUtil.class);
+	/* 日期格式 */
+	public static final String DATE_PATTERN = "yyyy-MM-dd";
+	/* 时间格式 */
+	public static final String TIME_PATTERN = "HH:mm:ss";
+	/* 日期时间格式 */
+	public static final String DATETIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+	
+	/* 日期时间格式 */
+	public static final String DATETIME_PATTERN1 = "yyyyMMddHHmmss";
+	/* 日期时间毫秒格式 */
+	public static final String DATETIME_SSS_PATTERN = "yyyy-MM-dd HH:mm:ss:SSS";
+
+	public static long getTimes() {
+		Date date = new Date();
+		return date.getTime();
+	}
+
+	/**
+	 * 获取当前日期-"yyyy-MM-dd"
+	 */
+	public static final String getCurrentDate() {
+		DateFormat df = new SimpleDateFormat(DATE_PATTERN);
+		Date date = new Date();
+		date.setTime(System.currentTimeMillis());
+		return df.format(date);
+	}
+
+	/**
+	 * 获取pattern格式的当前日期
+	 */
+	public static final String getCurrentDate(String pattern) {
+		DateFormat df = new SimpleDateFormat(pattern);
+		Date date = new Date();
+		date.setTime(System.currentTimeMillis());
+		return df.format(date);
+	}
+
+	/**
+	 * 获取当前时间-"HH:mm:ss"
+	 */
+	public static final String getCurrentTime() {
+		DateFormat df = new SimpleDateFormat(TIME_PATTERN);
+		Date date = new Date();
+		date.setTime(System.currentTimeMillis());
+		return df.format(date);
+	}
+
+	/**
+	 * 获取当前日期和时间-"yyyy-MM-dd HH:mm:ss"
+	 */
+	public static final String getCurrentDateTime() {
+		DateFormat df = new SimpleDateFormat(DATETIME_PATTERN);
+		Date date = new Date();
+		date.setTime(System.currentTimeMillis());
+		return df.format(date);
+	}
+
+	/**
+	 * 获取当前日期和时间毫秒-"yyyy-MM-dd HH:mm:ss:SSS"
+	 */
+	public static final String getCurrentDateTime_SSS() {
+		DateFormat df = new SimpleDateFormat(DATETIME_SSS_PATTERN);
+		Date date = new Date();
+		date.setTime(System.currentTimeMillis());
+		return df.format(date);
+	}
+
+	/**
+	 * 日期字符串转换成日期
+	 * 
+	 * @param dateStr -日期字符串 示例："2008-09-28"、"2008-9-28"
+	 */
+	public static final Date dateStr2Date(String dateStr) {
+		DateFormat df = new SimpleDateFormat(DATE_PATTERN);
+		Date date = null;
+		try {
+			date = df.parse(dateStr);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return date;
+	}
+
+	/**
+	 * 日期时间字符串转换成日期时间
+	 * 
+	 * @param dateStr -日期时间字符串，可以不带时间，返回的时间则为"00:00:00"。
+	 * 
+	 *                示例："2008-9-28 01:01:01"、"2008-09-28"、"2008-9-28"
+	 */
+	public static final Date dateStr2DateTime(String dateStr) {
+		// 如果只有日期，添加时间。
+
+		if (8 == dateStr.length() || 9 == dateStr.length() || 10 == dateStr.length()) {
+			dateStr += " 00:00:00";
+		}
+		DateFormat df = new SimpleDateFormat(DATETIME_PATTERN);
+		Date date = null;
+		try {
+			date = df.parse(dateStr);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return date;
+	}
+
+	/**
+	 * 日期字符串转换成SQL日期
+	 * 
+	 * @param dateStr -日期字符串 "yyyy-MM-dd" 示例："2008-09-28"、"2008-9-28"
+	 */
+	public static final java.sql.Date dateStr2SqlDate(String dateStr) {
+		java.sql.Date date = java.sql.Date.valueOf(dateStr);
+		return date;
+	}
+
+	/**
+	 * 日期字符串转换成Timestamp日期
+	 * 
+	 * @param dateStr -日期字符串 "yyyy-MM-dd HH:mm:ss" 示例："2008-09-28 13:41:20"
+	 */
+	public static final Timestamp dateStr2Timestamp(String dateStr) {
+		Timestamp date = Timestamp.valueOf(dateStr);
+		return date;
+	}
+
+	/**
+	 * 日期转换成字符串
+	 * 
+	 * @param date    -日期
+	 * @param pattern -返回的字符串格式，如果为空，则为"yyyy-MM-dd"。
+	 * 
+	 */
+	public static final String date2String(Date date, String pattern) {
+		String sdfPattern = "";
+		if (pattern == null) {
+			sdfPattern = DATE_PATTERN;
+		} else if ("".equals(pattern)) {
+			sdfPattern = DATE_PATTERN;
+		} else {
+			sdfPattern = pattern;
+		}
+		DateFormat df = new SimpleDateFormat(sdfPattern);
+		return df.format(date);
+	}
+
+	/**
+	 * java.util.Date转换成java.sql.Date
+	 * 
+	 * @param java .util.Date "yyyy-MM-dd" or "yyyy-MM-dd HH:mm:ss"
+	 */
+	public static final java.sql.Date date2SqlDate(Date date) {
+		java.sql.Date sqlDate = new java.sql.Date(date.getTime());
+		return sqlDate;
+	}
+
+	/**
+	 * java.util.Date转换成java.sql.Timestamp
+	 * 
+	 * @param java .util.Date "yyyy-MM-dd" or "yyyy-MM-dd HH:mm:ss"
+	 */
+	public static final java.sql.Timestamp date2Timestamp(Date date) {
+		java.sql.Timestamp timestamp = new java.sql.Timestamp(date.getTime());
+		return timestamp;
+	}
+
+	/**
+	 * java.sql.Date转换成java.util.Date
+	 * 
+	 * @param java .sql.Date
+	 */
+	public static final java.util.Date sqlDate2Date(java.sql.Date sqlDate) {
+		java.util.Date date = new java.util.Date(sqlDate.getTime());
+		return date;
+	}
+
+	/**
+	 * java.sql.Timestamp转换成java.util.Date
+	 * 
+	 * @param java .sql.Timestamp
+	 */
+	public static final java.util.Date timestamp2Date(java.sql.Timestamp timestamp) {
+		java.util.Date date = new java.util.Date(timestamp.getTime());
+		return date;
+	}
+
+	/**
+	 * 计算两个日期之间的天数差
+	 * 
+	 * @param beginDateStr -开始日期字符串，格式"yyyy-MM-dd"。
+	 * 
+	 * @param endDateStr   -结束日期字符串，格式"yyyy-MM-dd"。
+	 * 
+	 */
+	public static final long difDays(String beginDateStr, String endDateStr) {
+		long days = 0;
+		Date beginDate = DateUtil.dateStr2Date(beginDateStr);
+		Date endDate = DateUtil.dateStr2Date(endDateStr);
+		long beginDateLong = beginDate.getTime();
+		long endDateLong = endDate.getTime();
+		days = (long) ((endDateLong - beginDateLong) / (1000 * 60 * 60 * 24));
+		return days;
+	}
+
+	/**
+	 * 计算两个日期时间之间的小时差
+	 * 
+	 * @param beginDateStr -开始日期时间字符串，格式"yyyy-MM-dd HH:mm:ss"。
+	 * 
+	 * @param endDateStr   -结束日期时间字符串，格式"yyyy-MM-dd HH:mm:ss"。
+	 * 
+	 */
+	public static final long difHours(String beginDateTimeStr, String endDateTimeStr) {
+		long hours = 0;
+		Date beginDateTime = DateUtil.dateStr2DateTime(beginDateTimeStr);
+		Date endDateTime = DateUtil.dateStr2DateTime(endDateTimeStr);
+		long beginDateTimeLong = beginDateTime.getTime();
+		long endDateTimeLong = endDateTime.getTime();
+		hours = (long) ((endDateTimeLong - beginDateTimeLong) / (1000 * 60 * 60));
+		return hours;
+	}
+
+	/**
+	 * 计算两个日期时间之间的分钟差
+	 * 
+	 * @param beginDateStr -开始日期时间字符串，格式"yyyy-MM-dd HH:mm:ss"。
+	 * 
+	 * @param endDateStr   -结束日期时间字符串，格式"yyyy-MM-dd HH:mm:ss"。
+	 * 
+	 */
+	public static final long difMinutes(String beginDateTimeStr, String endDateTimeStr) {
+		long minutes = 0;
+		Date beginDateTime = DateUtil.dateStr2DateTime(beginDateTimeStr);
+		Date endDateTime = DateUtil.dateStr2DateTime(endDateTimeStr);
+		long beginDateTimeLong = beginDateTime.getTime();
+		long endDateTimeLong = endDateTime.getTime();
+		minutes = (long) ((endDateTimeLong - beginDateTimeLong) / (1000 * 60));
+		return minutes;
+	}
+
+	/**
+	 * 计算两个日期时间之间的时间差，自适应单位
+	 * 
+	 * @param beginDateStr -开始日期时间字符串，格式"yyyy-MM-dd HH:mm:ss"。
+	 * 
+	 * @param endDateStr   -结束日期时间字符串，格式"yyyy-MM-dd HH:mm:ss"。
+	 * 
+	 */
+	public static final String difAapter(String beginDateTimeStr, String endDateTimeStr) {
+		long minutes = difMinutes(beginDateTimeStr, endDateTimeStr);
+		double c = 60;
+		String difStr = "";
+		if (minutes <= 60) {
+			difStr = minutes + "分钟";
+		} else if (minutes > 60 && minutes < 60 * 24) {
+			double hours = MathUtil.setScale(minutes / c, 1);
+			difStr = (int) hours + "小时";
+		} else {
+			double days = MathUtil.setScale(minutes / c / 24, 1);
+			difStr = (int) days + "天";
+		}
+		return difStr;
+
+	}
+
+	/**
+	 * 计算日期前后N个月的日期
+	 * 
+	 * 
+	 * @param dateStr  -参考时间，即需要计算的日期。
+	 * 
+	 * @param difMonth -月份间隔，正数（后面的月份）、负数（前面的月份）
+	 */
+	public static final String AddMonths(String dateStr, int difMonths) {
+		DateFormat df = new SimpleDateFormat(DATE_PATTERN);
+		String returnDate = "";
+		try {
+			Date date = df.parse(dateStr);
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(date);
+			cal.add(Calendar.MONTH, difMonths);
+			date = cal.getTime();
+			returnDate = df.format(date);
+		} catch (ParseException e) {
+			// e.printStackTrace();
+			log.error(e.getMessage());
+		}
+		return returnDate;
+	}
+
+	/**
+	 * 计算日期前后N天的日期
+	 * 
+	 * @param dateStr  -参考时间，即需要计算的日期。
+	 * 
+	 * @param difMonth -月份间隔，正数（后面的月份）、负数（前面的月份）
+	 */
+	public static final String AddDays(String dateStr, int difDays, String pattern) {
+		if (pattern == null)
+			pattern = DATE_PATTERN;
+		DateFormat df = new SimpleDateFormat(pattern);
+		String returnDate = "";
+		try {
+			Date date = df.parse(dateStr);
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(date);
+			cal.add(Calendar.DAY_OF_MONTH, difDays);
+			date = cal.getTime();
+			returnDate = df.format(date);
+		} catch (ParseException e) {
+			// e.printStackTrace();
+			log.error(e.getMessage());
+		}
+		return returnDate;
+	}
+
+	public static final String AddMinutes(String dateStr, int difMinutes) {
+		DateFormat df = new SimpleDateFormat(DATETIME_PATTERN);
+		String returnDate = "";
+		try {
+			Date date = df.parse(dateStr);
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(date);
+			cal.add(Calendar.MINUTE, difMinutes);
+			date = cal.getTime();
+			returnDate = df.format(date);
+		} catch (ParseException e) {
+			// e.printStackTrace();
+			log.error(e.getMessage());
+		}
+		return returnDate;
+	}
+	
+	public static final String AddSeconds(String dateStr, int difSeconds) {
+		DateFormat df = new SimpleDateFormat(DATETIME_PATTERN);
+		String returnDate = "";
+		try {
+			Date date = df.parse(dateStr);
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(date);
+			cal.add(Calendar.SECOND, difSeconds);
+			date = cal.getTime();
+			returnDate = df.format(date);
+		} catch (ParseException e) {
+			// e.printStackTrace();
+			log.error(e.getMessage());
+		}
+		return returnDate;
+	}
+	
+	public static final String AddSeconds1(String dateStr, int difSeconds) {
+		DateFormat df = new SimpleDateFormat(DATETIME_SSS_PATTERN);
+		String returnDate = "";
+		try {
+			Date date = df.parse(dateStr);
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(date);
+			cal.add(Calendar.SECOND, difSeconds);
+			date = cal.getTime();
+			returnDate = df.format(date);
+		} catch (ParseException e) {
+			// e.printStackTrace();
+			log.error(e.getMessage());
+		}
+		return returnDate;
+	}
+
+	public static final String AddHours(String dateStr, int difMinutes) {
+		DateFormat df = new SimpleDateFormat(DATETIME_PATTERN);
+		String returnDate = "";
+		try {
+			Date date = df.parse(dateStr);
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(date);
+			cal.add(Calendar.HOUR_OF_DAY, difMinutes);
+			date = cal.getTime();
+			returnDate = df.format(date);
+		} catch (ParseException e) {
+			// e.printStackTrace();
+			log.error(e.getMessage());
+		}
+		return returnDate;
+	}
+
+	// 获取上个月最后一天
+
+	public static String getPreviousMonthEnd() {
+		String str = "";
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+		Calendar lastDate = Calendar.getInstance();
+		lastDate.add(Calendar.MONTH, -1);// 减一个月
+		lastDate.set(Calendar.DATE, 1);// 把日期设置为当月第一天
+
+		lastDate.roll(Calendar.DATE, -1);// 日期回滚一天，也就是本月最后一天
+
+		str = sdf.format(lastDate.getTime());
+		return str;
+	}
+
+}

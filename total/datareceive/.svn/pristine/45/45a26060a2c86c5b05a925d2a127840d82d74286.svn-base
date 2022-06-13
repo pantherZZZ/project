@@ -1,0 +1,113 @@
+package com.yy.common.utils;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+
+public class PasswordUtil {
+	// 加密秘钥 ，16个字节也就是128 bit
+	private static final byte[] AES_KEY = { 0x5e, 0x74, 0x78, 0x73, 0x4f, 0x76, 0x3d, 0x55, 0x49, 0x3d, 0x32, 0x36,
+			0x3a, 0x4c, 0x36, 0x14 };
+
+	private static final byte[] TIME_KEY = { 0x06, 0x10, 0x04, 0x0D, 0x05, 0x0A };
+
+	// 加密方法
+	private static byte[] encrypt(byte[] key, byte[] clear) throws Exception {
+		SecretKeySpec skeySpec = new SecretKeySpec(key, "AES");
+		Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
+		cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
+		byte[] encrypted = cipher.doFinal(clear);
+		return encrypted;
+	}
+
+	// 解密方法
+	private static byte[] decrypt(byte[] key, byte[] encrypted) throws Exception {
+		SecretKeySpec skeySpec = new SecretKeySpec(key, "AES");
+		Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
+		cipher.init(Cipher.DECRYPT_MODE, skeySpec);
+		byte[] decrypted = cipher.doFinal(encrypted);
+		return decrypted;
+	}
+
+	public static byte[] getpdfasswfdsoerd(String imei, byte[] mBytes_time) {
+
+		byte[] SOURCE_BUF = imei.getBytes();
+
+		byte[] mBytes = new byte[imei.length() + 1];
+		byte[] terminals = new byte[] { 0x00 };
+
+		System.arraycopy(terminals, 0, mBytes, 0, terminals.length);
+		System.arraycopy(SOURCE_BUF, 0, mBytes, terminals.length, SOURCE_BUF.length);
+
+		/*
+		 * for (int i = 0; i < newImei.length(); i++) { String mSubstring =
+		 * newImei.substring(i, i + 1); byte mB =
+		 * Integer.valueOf(mSubstring).byteValue(); SOURCE_BUF[i] = mB; }
+		 */
+
+		byte[] encryBuf = new byte[16];
+
+		for (int i = 0; i < 6; i++) {
+			Integer in = mBytes[i] + mBytes_time[i];
+			byte mB = in.byteValue();
+			mBytes[i] = mB;
+
+		}
+		try {
+			encryBuf = encrypt(mBytes, AES_KEY);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return encryBuf;
+	}
+
+	public static byte[] getTimestampe() {
+		byte[] mBytes = new byte[6];
+		List<String> mList = new ArrayList<String>();
+		Date mDate = new Date();
+		SimpleDateFormat lsdStrFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+		String strD = lsdStrFormat.format(mDate);
+		String mSubstring2 = strD.substring(2, 4);
+		String mSubstring3 = strD.substring(4, 6);
+		String mSubstring4 = strD.substring(6, 8);
+		String mSubstring5 = strD.substring(8, 10);
+		String mSubstring6 = strD.substring(10, 12);
+		String mSubstring1 = strD.substring(12, 14);
+		mList.add(mSubstring2);
+		mList.add(mSubstring3);
+		mList.add(mSubstring4);
+		mList.add(mSubstring5);
+		mList.add(mSubstring6);
+		mList.add(mSubstring1);
+		for (int i = 0; i < mList.size(); i++) {
+			byte inter = Integer.valueOf(mList.get(i)).byteValue();
+			Integer time = TIME_KEY[i] + inter;
+
+			mBytes[i] = time.byteValue();
+		}
+		return mBytes;
+	}
+
+	public static String getPassWordCode(String imei) {
+		byte[] terminals = new byte[] { 0x01 };
+		byte[] mTimestampe = getTimestampe();
+		byte[] mGetpdfasswfdsoerd = getpdfasswfdsoerd(imei, mTimestampe);
+		byte[] mBytes = new byte[mTimestampe.length + mGetpdfasswfdsoerd.length + terminals.length];
+		System.arraycopy(terminals, 0, mBytes, 0, terminals.length);
+		System.arraycopy(mTimestampe, 0, mBytes, terminals.length, mTimestampe.length);
+		System.arraycopy(mGetpdfasswfdsoerd, 0, mBytes, mTimestampe.length + terminals.length,
+				mGetpdfasswfdsoerd.length);
+		return Convert.toHexString(mBytes);
+
+	}
+
+	public static void main(String[] a) {
+		// System.out.println(PasswordUtil.getPassWordCode("863703036807795"));
+		System.out.print(Integer.parseInt("11", 16));
+	}
+}

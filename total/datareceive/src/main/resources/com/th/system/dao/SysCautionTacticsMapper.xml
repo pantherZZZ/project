@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysCautionTacticsMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysCautionTactics">
+    <id column="cautionTacticsId" property="cautionTacticsId" />
+    <result column="userId" property="userId" />
+    <result column="projectId" property="projectId" />
+    <result column="modelId" property="modelId" />
+    <result column="cautionType" jdbcType="VARCHAR" property="cautionType" />
+    <result column="isMailbox" jdbcType="VARCHAR" property="isMailbox" />
+    <result column="isNote" jdbcType="VARCHAR" property="isNote" />
+    <result column="cautionGrade" jdbcType="VARCHAR" property="cautionGrade" />
+    <result column="forbidden" jdbcType="VARCHAR" property="forbidden" />
+  </resultMap>
+	
+  <sql id="Base_List">
+    cautionTacticsId, userId, modelId, isMailbox,isNote,cautionGrade,forbidden
+  </sql>
+  
+   <select id="findUserCautionTactics" resultType="com.th.system.vo.SysCautionTacticsVo">
+			select t.cautionTacticsId,t.cautionType,
+			t.isMailbox,t.isNote,t.cautionGrade,t.forbidden
+			,m.modelName,u.userName,t.modelId,t.projectId,t.userId from 
+			sys_cautionTactics as t
+			inner join sys_project as p
+			on p.projectId = t.projectId
+			inner join sys_model as m
+			on m.modelId = t.modelId
+			inner join sys_user as u
+			on u.userId = t.userId
+			<if test="userid != null">
+		      and  p.userId = #{userid}
+		    </if>
+		    <if test="modelName != null and modelName != ''">
+		      and m.modelName like concat('%',#{modelName},'%')
+		    </if>
+		    <if test="userName != null and userName != ''">
+		      and u.userName like concat('%',#{userName},'%')
+		    </if>
+		    <if test="cautionGrade != null and cautionGrade != ''">
+		      and t.cautionGrade = #{cautionGrade}
+		    </if>
+		    LIMIT #{page},#{limit}
+  </select>
+  
+  <select id="findById" resultType="com.th.system.vo.SysCautionTacticsVo">
+			select t.cautionTacticsId,t.cautionType,
+			t.isMailbox,t.isNote,t.cautionGrade,t.forbidden
+			,m.modelName,u.userName,t.modelId,t.projectId,t.userId from 
+			sys_cautionTactics as t
+			inner join sys_project as p
+			on p.projectId = t.projectId
+			inner join sys_model as m
+			on m.modelId = t.modelId
+			inner join sys_user as u
+			on u.userId = t.userId
+			and  t.cautionTacticsId = #{cautionTacticsId}
+  </select>
+  
+
+  
+    <update id="updateCautionTactics" parameterType="com.th.system.po.SysCautionTactics">
+        update sys_cautionTactics
+        <set>
+        	<if test="projectId != null">projectId = #{projectId},</if>
+            <if test="cautionType != null">cautionType = #{cautionType},</if>
+            <if test="userId != null">userId = #{userId},</if>
+            <if test="modelId != null">modelId = #{modelId},</if>
+            <if test="isMailbox != null">isMailbox = #{isMailbox},</if>
+            <if test="isNote != null">isNote = #{isNote},</if>
+            <if test="cautionGrade != null">cautionGrade = #{cautionGrade},</if>
+            <if test="forbidden != null">forbidden = #{forbidden},</if>
+        </set>
+        where cautionTacticsId = #{cautionTacticsId}
+  </update>
+  
+   <delete id="delCautionTactics">
+  	DELETE from sys_cautionTactics
+  	where cautionTacticsId = #{cautionTacticsId}
+  </delete>
+  
+  <insert id="insertCautionTactics" parameterType="com.th.system.po.SysCautionTactics">
+    insert sys_cautionTactics
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="userId != null">
+        userId,
+      </if>
+       <if test="projectId != null">
+        projectId,
+      </if>
+      <if test="modelId != null">
+        modelId,
+      </if>     
+      <if test="cautionType != null">
+        cautionType,
+      </if>
+      <if test="isMailbox != null">
+        isMailbox,
+      </if>
+      <if test="isNote != null">
+        isNote,
+      </if>
+      <if test="cautionGrade != null">
+        cautionGrade,
+      </if>
+      <if test="forbidden != null">
+        forbidden,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="userId != null">
+        #{userId},
+      </if> 
+      <if test="projectId != null">
+        #{projectId},
+      </if> 
+      <if test="modelId != null">
+        #{modelId},
+      </if>
+      <if test="cautionType != null">
+        #{cautionType},
+      </if>
+      <if test="isMailbox != null">
+        #{isMailbox},
+      </if>
+      <if test="isNote != null">
+        #{isNote},
+      </if>
+      <if test="cautionGrade != null">
+        #{cautionGrade},
+      </if>
+      <if test="forbidden != null">
+        #{forbidden},
+      </if>
+    </trim>
+  </insert>
+
+</mapper>

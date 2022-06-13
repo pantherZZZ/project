@@ -1,0 +1,173 @@
+package com.yy.data.udp;
+
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+import com.yy.common.constant.MyConstants;
+import com.yy.common.utils.DateUtil;
+import com.yy.common.utils.HttpUtil;
+import com.yy.common.utils.JsonUtil;
+import com.yy.data.vo.WControlVo;
+import com.yy.data.vo.WControlinfostatesVo;
+import com.yy.data.vo.WEquVo;
+import com.yy.data.vo.WUdpSenderVo;
+
+@Service("udpService")
+public class UdpService {
+
+	public void analysisInfo(String date, Map<String, Object> analysisInfo) {
+		if (analysisInfo.get("type") != null) {
+			String type = analysisInfo.get("type") + "";
+			String equid = analysisInfo.get("equid") + "";
+			String method = "";
+			WUdpSenderVo udpSenderVo = setWUdpSenderVo(analysisInfo);
+			String param = "equid=" + equid + "&udpsendervo=" + JsonUtil.writeAsString(udpSenderVo);
+			if ("71".equals(type)) {// 远程请求开锁,先不出待办
+				method = MyConstants.uploaddata_remoteOpen_server.toString();
+
+			} else if ("41".equals(type)) {// 状态上报
+				method = MyConstants.uploaddata_equStateChange_server.toString();
+				WControlVo controlVo = setWControlVo(analysisInfo);
+				WEquVo equVo = setWEquVo(analysisInfo);
+				param += "&control=" + JsonUtil.writeAsString(controlVo) + "&equ=" + JsonUtil.writeAsString(equVo);
+			} else if ("51".equals(type)) {// 心跳监控
+				method = MyConstants.uploaddata_equHart_server.toString();
+				WControlVo controlVo = setWControlVo(analysisInfo);
+				WEquVo equVo = setWEquVo(analysisInfo);
+				WControlinfostatesVo controlinfostatesVo = setWControlinfostatesVo(analysisInfo);
+				param += "&control=" + JsonUtil.writeAsString(controlVo) + "&equ=" + JsonUtil.writeAsString(equVo)
+						+ "&controlinfostates=" + JsonUtil.writeAsString(controlinfostatesVo);
+			} else if ("81".equals(type)) {// 上电包，当前版本没有81包
+				
+			}
+			try {
+				new HttpUtil().openConnectionForPost(method, param);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * 设备状态信息解析
+	 * 
+	 * @param equstates
+	 * @return
+	 */
+	public String[] getEquStateFromMess(String equstates) {
+		String doorstate = "";
+		String lockstate = "";
+		String[] strs = equstates.split("_");
+		if ("关".equals(strs[0])) {
+			doorstate = "0";
+		} else {
+			doorstate = "1";
+		}
+		if ("锁开".equals(strs[1])) {
+			lockstate = "0";
+		} else {
+			lockstate = "1";
+		}
+		return new String[] { doorstate, lockstate };
+	}
+
+	public WControlinfostatesVo setWControlinfostatesVo(Map<String, Object> analysisInfo) {
+		String controlid = analysisInfo.get("equid") + "";
+		String charge = analysisInfo.get("charge") + "";
+		String signal = analysisInfo.get("signal") + "";
+		String temperature = analysisInfo.get("temperature") + "";
+		String humidity = analysisInfo.get("humidity") + "";
+		String rsrp = analysisInfo.get("rsrp") + "";
+		String version = analysisInfo.get("version") + "";
+		String opensum = analysisInfo.get("opensum") + "";
+		String t3324 = analysisInfo.get("t3324") + "";
+		String t3412 = analysisInfo.get("t3412") + "";
+		String chn = analysisInfo.get("chn") + "";
+		String cellid = analysisInfo.get("cellid") + "";
+		String snr = analysisInfo.get("snr") + "";
+		String iccid = analysisInfo.get("iccid") + "";
+		String equstate = analysisInfo.get("state") + "";
+		WControlinfostatesVo vo = new WControlinfostatesVo(null, controlid, DateUtil.getCurrentDateTime(), charge,
+				signal, temperature, humidity, rsrp, version, opensum, t3324, t3412, chn, cellid, snr, iccid, equstate);
+		return vo;
+
+	}
+
+	public WUdpSenderVo setWUdpSenderVo(Map<String, Object> analysisInfo) {
+		String equid = analysisInfo.get("equid") + "";
+		String charge = analysisInfo.get("charge") + "";
+		String state = analysisInfo.get("state") + "";
+		String hex_message = analysisInfo.get("hex_message") + "";
+		WUdpSenderVo vo = new WUdpSenderVo(null, null, null, DateUtil.getCurrentDateTime(), null, equid, charge, state,
+				hex_message, "0");
+
+		return vo;
+
+	}
+
+	public WControlVo setWControlVo(Map<String, Object> analysisInfo) {
+		String equid = analysisInfo.get("equid") + "";
+		String charge = null;
+		String imsi = null;
+		String iccid = null;
+		String rsrp = null;
+		String chn = null;
+		String cellid = null;
+		String snr = null;
+		String signal = null;
+		String temperature = null;
+		String humidity = null;
+		String version = null;
+		if (analysisInfo.get("charge") != null) {
+			charge = analysisInfo.get("charge") + "";
+		}
+		if (analysisInfo.get("imsi") != null) {
+			imsi = analysisInfo.get("imsi") + "";
+		}
+		if (analysisInfo.get("iccid") != null) {
+			iccid = analysisInfo.get("iccid") + "";
+		}
+		if (analysisInfo.get("rsrp") != null) {
+			rsrp = analysisInfo.get("rsrp") + "";
+		}
+		if (analysisInfo.get("chn") != null) {
+			chn = analysisInfo.get("chn") + "";
+		}
+		if (analysisInfo.get("cellid") != null) {
+			cellid = analysisInfo.get("cellid") + "";
+		}
+		if (analysisInfo.get("snr") != null) {
+			snr = analysisInfo.get("snr") + "";
+		}
+		if (analysisInfo.get("signal") != null) {
+			signal = analysisInfo.get("signal") + "";
+		}
+		if (analysisInfo.get("temperature") != null) {
+			temperature = analysisInfo.get("temperature") + "";
+		}
+		if (analysisInfo.get("humidity") != null) {
+			humidity = analysisInfo.get("humidity") + "";
+		}
+		if (analysisInfo.get("version") != null) {
+			version = analysisInfo.get("version") + "";
+		}
+		// 目前支持一拖一，否则equid不一定为controlid
+		WControlVo vo = new WControlVo(equid, null, DateUtil.getCurrentDateTime(), charge, imsi, null, iccid, rsrp, chn,
+				null, cellid, snr, signal, temperature, humidity, null, null, version, null, null, null, null);
+		return vo;
+
+	}
+
+	public WEquVo setWEquVo(Map<String, Object> analysisInfo) {
+		String equid = analysisInfo.get("equid") + "";
+		String equstates = analysisInfo.get("state") + "";
+		String[] states = getEquStateFromMess(equstates);
+		String equstate = states[0];
+		String lockstate = states[1];
+		WEquVo vo = new WEquVo(equid, null, null, null, DateUtil.getCurrentDateTime(), equstate, lockstate, null, null,
+				null, null, null);
+		return vo;
+
+	}
+}

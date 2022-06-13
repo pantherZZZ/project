@@ -1,0 +1,143 @@
+package com.yy.data.vo;
+
+import java.util.List;
+
+public class WEquVo {
+	private String equid;
+
+	private String proid;
+
+	private String equname;
+
+	private String equcode;
+
+	private String recordtime;
+
+	private String equstate;
+
+	private String lockstate;
+
+	private String equtype;
+
+	private String anglefix;
+
+	private String angle;
+
+	private String sensitivity;
+
+	private String inalarm;
+
+	public String getEquid() {
+		return equid;
+	}
+
+	public void setEquid(String equid) {
+		this.equid = equid == null ? null : equid.trim();
+	}
+
+	public String getProid() {
+		return proid;
+	}
+
+	public void setProid(String proid) {
+		this.proid = proid == null ? null : proid.trim();
+	}
+
+	public String getEquname() {
+		return equname;
+	}
+
+	public void setEquname(String equname) {
+		this.equname = equname == null ? null : equname.trim();
+	}
+
+	public String getEqucode() {
+		return equcode;
+	}
+
+	public void setEqucode(String equcode) {
+		this.equcode = equcode == null ? null : equcode.trim();
+	}
+
+	public String getRecordtime() {
+		return recordtime;
+	}
+
+	public void setRecordtime(String recordtime) {
+		this.recordtime = recordtime == null ? null : recordtime.trim();
+	}
+
+	public String getEqustate() {
+		return equstate;
+	}
+
+	public void setEqustate(String equstate) {
+		this.equstate = equstate == null ? null : equstate.trim();
+	}
+
+	public String getLockstate() {
+		return lockstate;
+	}
+
+	public void setLockstate(String lockstate) {
+		this.lockstate = lockstate == null ? null : lockstate.trim();
+	}
+
+	public String getEqutype() {
+		return equtype;
+	}
+
+	public void setEqutype(String equtype) {
+		this.equtype = equtype == null ? null : equtype.trim();
+	}
+
+	public String getAnglefix() {
+		return anglefix;
+	}
+
+	public void setAnglefix(String anglefix) {
+		this.anglefix = anglefix == null ? null : anglefix.trim();
+	}
+
+	public String getAngle() {
+		return angle;
+	}
+
+	public void setAngle(String angle) {
+		this.angle = angle == null ? null : angle.trim();
+	}
+
+	public String getSensitivity() {
+		return sensitivity;
+	}
+
+	public void setSensitivity(String sensitivity) {
+		this.sensitivity = sensitivity == null ? null : sensitivity.trim();
+	}
+
+	public String getInalarm() {
+		return inalarm;
+	}
+
+	public void setInalarm(String inalarm) {
+		this.inalarm = inalarm == null ? null : inalarm.trim();
+	}
+
+	public WEquVo(String equid, String proid, String equname, String equcode, String recordtime, String equstate,
+			String lockstate, String equtype, String anglefix, String angle, String sensitivity, String inalarm) {
+		super();
+		this.equid = equid;
+		this.proid = proid;
+		this.equname = equname;
+		this.equcode = equcode;
+		this.recordtime = recordtime;
+		this.equstate = equstate;
+		this.lockstate = lockstate;
+		this.equtype = equtype;
+		this.anglefix = anglefix;
+		this.angle = angle;
+		this.sensitivity = sensitivity;
+		this.inalarm = inalarm;
+	}
+
+}

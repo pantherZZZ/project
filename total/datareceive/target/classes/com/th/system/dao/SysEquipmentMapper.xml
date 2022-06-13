@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysEquipmentMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysEquipment">
+    <id column="equipmentId" property="equipmentId" />
+    <result column="equipmentName" property="equipmentName" />
+    <result column="reportedMode" property="reportedMode" />
+    <result column="plantId" property="plantId" />
+    <result column="typeId" property="typeId" />
+    <result column="install" property="install" />
+    <result column="specification" property="specification" />
+    <result column="isDTU" property="isDTU" />
+    <result column="dtuId" property="dtuId" />
+    <result column="modelId" property="modelId" />
+    <result column="strategyId" property="strategyId" />
+    <result column="number" property="number" />
+    <result column="time" property="time" />
+  </resultMap>
+	
+  <sql id="Base_List">
+    equipmentId,isDTU,modelId,dtuId,number, equipmentName, reportedMode, plantId, typeId,`install`,specification,number
+  </sql>
+	
+   <update id="updateEquipment" parameterType="com.th.system.po.SysEquipment">
+        update sys_equipment
+        <set>
+            <if test="equipmentName != null">`equipmentName` = #{equipmentName},</if>
+            <if test="reportedMode != null">`reportedMode` = #{reportedMode},</if>
+            <if test="plantId != null">`plantId` = #{plantId},</if>
+            <if test="typeId != null">`typeId` = #{typeId},</if>
+            <if test="install != null">`install` = #{install},</if>
+            <if test="specification != null">`specification` = #{specification},</if>
+            <if test="dtuId != null">`dtuId` = #{dtuId},</if>
+            <if test="strategyId != null">`strategyId` = #{strategyId},</if>
+            <if test="number != null">`number` = #{number},</if>
+        </set>
+        where equipmentId = #{equipmentId}
+  </update>	
+	
+  <select id="findAll" resultMap="BaseMap">
+		select equipmentId,number, equipmentName, reportedMode, plantId, typeId,`install`,specification
+		from sys_equipment where `install` = '2'
+  </select>
+  
+  <select id="findByNumber" resultMap="BaseMap" parameterType="java.lang.String">
+		select <include refid="Base_List" />
+		from sys_equipment where number like concat('%',#{number},'%')
+  </select>
+  
+  <select id="findByNumberPro" resultMap="BaseMap" parameterType="java.lang.String">
+		select e.equipmentId,e.isDTU,e.modelId
+		,e.dtuId,e.number,e.equipmentName,e.reportedMode
+		,e.plantId,e.typeId,e.`install`,e.specification
+		,e.number from 
+		sys_equipment as e
+		inner join sys_dtu as d
+		on d.equipmentId = e.equipmentId
+		and d.postId like concat('%',#{number},'%')
+  </select>
+  
+  <select id="findAllPro" resultMap="BaseMap">
+		select equipmentId, number,equipmentName, reportedMode, plantId, typeId,`install`,specification
+		from sys_equipment where equipmentId = #{equipmentId}
+  </select>
+  
+  <select id="findCount" resultType="java.lang.Integer">
+		select count(equipmentId) from sys_equipment
+  </select>
+  
+  <select id="findModelCount" resultType="java.lang.Integer">
+		select count(equipmentId) from sys_equipment
+		<where>
+		      modelId = #{modelId}
+		</where>
+  </select>
+  
+  <select id="findTimeCount" resultType="java.lang.Integer" parameterType="java.lang.String">
+		select count(equipmentId) from sys_equipment where `install` = '2'
+		and time like concat('%',#{time},'%')
+  </select>
+  
+  <delete id="delEquipment">
+  	DELETE from sys_equipment
+  	where equipmentId = #{equipmentId}
+  </delete>
+  
+  <select id="findDTUEquipment" resultType="com.th.system.vo.SysEquipmentVo">
+		select e.equipmentId as equipmentId,e.equipmentName as equipmentName,
+		e.reportedMode as reportedMode,e.plantId as plantId,e.typeId as typeId,
+		e.`install` as `install`,p.plantName as plantName,t.typeName as typeName,
+		e.modelId as modelId,n.modelNumberId,n.modelNumberName,e.number
+		from sys_equipment as e
+		inner join sys_plant as p
+		on p.plantId = e.plantId   
+		inner join sys_type as t
+		on t.typeId = e.typeId
+	    inner join sys_modelNumber as n
+		on n.modelNumberId = e.specification
+		and e.isDTU = "1"
+		and e.modelId = #{modelId}
+		<if test="equipmentName != null and equipmentName != '' ">
+		     and e.equipmentName like concat('%',#{equipmentName},'%')
+		</if>
+		<if test="val != null">
+		     LIMIT #{page},#{limit}
+	    </if>
+  </select>
+  
+   <select id="findDTUEquipmentById" resultType="com.th.system.vo.SysEquipmentVo">
+		select e.equipmentId as equipmentId,e.equipmentName as equipmentName,
+		e.reportedMode as reportedMode,e.plantId as plantId,e.typeId as typeId,
+		e.`install` as `install`,p.plantName as plantName,t.typeName as typeName,
+		e.modelId as modelId,n.modelNumberId,n.modelNumberName,e.number
+		from sys_equipment as e
+		inner join sys_plant as p
+		on p.plantId = e.plantId   
+		inner join sys_type as t
+		on t.typeId = e.typeId
+	    inner join sys_modelNumber as n
+		on n.modelNumberId = e.specification
+		and e.isDTU = "1"
+		and e.equipmentId = #{equipmentId}
+  </select>
+	
+	<select id="findEquipmentById" resultType="com.th.system.vo.SysEquipmentVo">
+		select e.equipmentId as equipmentId,e.equipmentName as equipmentName,
+		e.reportedMode as reportedMode,e.plantId as plantId,e.typeId as typeId,
+		e.`install` as `install`,p.plantName as plantName,t.typeName as typeName,
+		e.modelId as modelId,n.modelNumberId,n.modelNumberName,e.dtuId,e.strategyId,
+		s.strategyName,e.number
+		from sys_equipment as e
+		inner join sys_plant as p
+		on p.plantId = e.plantId   
+		inner join sys_type as t
+		on t.typeId = e.typeId
+	    inner join sys_modelNumber as n
+		on n.modelNumberId = e.specification
+		inner join sys_strategy as s
+		on s.strategyId = e.strategyId
+		and e.equipmentId = #{equipmentId}
+  </select>
+	
+ <select id="findEquipment" resultType="com.th.system.vo.SysEquipmentVo">
+		select e.equipmentId as equipmentId,e.equipmentName as equipmentName,
+		e.reportedMode as reportedMode,e.plantId as plantId,e.typeId as typeId,
+		e.`install` as `install`,p.plantName as plantName,t.typeName as typeName,
+		e.modelId as modelId,n.modelNumberId,n.modelNumberName,e.dtuId,
+		e.strategyId,s.strategyName,e.number
+		from sys_equipment as e
+		inner join sys_plant as p
+		on p.plantId = e.plantId   
+		inner join sys_type as t
+		on t.typeId = e.typeId
+	    inner join sys_modelNumber as n
+		on n.modelNumberId = e.specification
+		inner join sys_strategy as s
+		on s.strategyId = e.strategyId
+		and e.isDTU = "2"
+		and e.modelId = #{modelId}
+		<if test="equipmentName != null and equipmentName != '' ">
+		     and e.equipmentName like concat('%',#{equipmentName},'%')
+		</if>
+		<if test="val != null">
+		     LIMIT #{page},#{limit}
+	    </if>
+  </select>
+
+
+ <insert id="insertEquipment"  parameterType="com.th.system.po.SysEquipment">
+    insert into sys_equipment
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+        equipmentName,
+            plantId,
+            typeId,
+            install,
+            specification,
+            isDTU,
+            dtuId,
+            modelId,
+            strategyId,
+        sensor_type,
+            time,
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+        <if test="equipmentName != null and equipmentName != ''">
+        #{equipmentName},
+      </if>
+        <if test="plantId != null and plantId != ''">
+        #{plantId},
+      </if>
+        <if test="typeId != null and typeId != ''">
+        #{typeId},
+      </if>
+        <if test="install != null and install != ''">
+        #{install},
+      </if>
+        <if test="specification != null and specification != ''">
+            #{specification},
+        </if>
+        <if test="isDTU != null and isDTU != ''">
+        #{isDTU},
+      </if>
+        <if test="dtuId != null and dtuId != ''">
+        #{dtuId},
+      </if>
+        <if test="modelId != null and modelId != ''">
+            #{modelId},
+        </if>
+        <if test="strategyId != null and strategyId != ''">
+        #{strategyId},
+      </if>
+        <if test="sensorType != null and sensorType != ''">
+            #{sensorType},
+        </if>
+        <if test="time != null and time != ''">
+            #{time}
+        </if>
+    </trim>
+  </insert>
+</mapper>

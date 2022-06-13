@@ -1,0 +1,253 @@
+package com.yy.data.vo;
+
+public class WControlVo {
+	private String controlid;
+
+	private String proid;
+
+	private String recordtime;
+
+	private String charge;
+
+	private String imsi;
+
+	private String imei;
+
+	private String iccid;
+
+	private String rsrp;
+
+	private String chn;
+
+	private String wifilevel;
+
+	private String cellid;
+
+	private String snr;
+
+	private String signals;
+
+	private String temperature;
+
+	private String humidity;
+
+	private String adjustVoltage;
+
+	private String deviceid;
+
+	private String version;
+
+	private String hardver;
+
+	private String mac;
+
+	private String iotver;
+
+	private String inalarm;
+
+	public String getControlid() {
+		return controlid;
+	}
+
+	public void setControlid(String controlid) {
+		this.controlid = controlid == null ? null : controlid.trim();
+	}
+
+	public String getProid() {
+		return proid;
+	}
+
+	public void setProid(String proid) {
+		this.proid = proid == null ? null : proid.trim();
+	}
+
+	public String getRecordtime() {
+		return recordtime;
+	}
+
+	public void setRecordtime(String recordtime) {
+		this.recordtime = recordtime == null ? null : recordtime.trim();
+	}
+
+	public String getCharge() {
+		return charge;
+	}
+
+	public void setCharge(String charge) {
+		this.charge = charge == null ? null : charge.trim();
+	}
+
+	public String getImsi() {
+		return imsi;
+	}
+
+	public void setImsi(String imsi) {
+		this.imsi = imsi == null ? null : imsi.trim();
+	}
+
+	public String getImei() {
+		return imei;
+	}
+
+	public void setImei(String imei) {
+		this.imei = imei == null ? null : imei.trim();
+	}
+
+	public String getIccid() {
+		return iccid;
+	}
+
+	public void setIccid(String iccid) {
+		this.iccid = iccid == null ? null : iccid.trim();
+	}
+
+	public String getRsrp() {
+		return rsrp;
+	}
+
+	public void setRsrp(String rsrp) {
+		this.rsrp = rsrp == null ? null : rsrp.trim();
+	}
+
+	public String getChn() {
+		return chn;
+	}
+
+	public void setChn(String chn) {
+		this.chn = chn == null ? null : chn.trim();
+	}
+
+	public String getWifilevel() {
+		return wifilevel;
+	}
+
+	public void setWifilevel(String wifilevel) {
+		this.wifilevel = wifilevel == null ? null : wifilevel.trim();
+	}
+
+	public String getCellid() {
+		return cellid;
+	}
+
+	public void setCellid(String cellid) {
+		this.cellid = cellid == null ? null : cellid.trim();
+	}
+
+	public String getSnr() {
+		return snr;
+	}
+
+	public void setSnr(String snr) {
+		this.snr = snr == null ? null : snr.trim();
+	}
+
+	public String getSignals() {
+		return signals;
+	}
+
+	public void setSignals(String signals) {
+		this.signals = signals;
+	}
+
+	public String getTemperature() {
+		return temperature;
+	}
+
+	public void setTemperature(String temperature) {
+		this.temperature = temperature == null ? null : temperature.trim();
+	}
+
+	public String getHumidity() {
+		return humidity;
+	}
+
+	public void setHumidity(String humidity) {
+		this.humidity = humidity == null ? null : humidity.trim();
+	}
+
+	public String getAdjustVoltage() {
+		return adjustVoltage;
+	}
+
+	public void setAdjustVoltage(String adjustVoltage) {
+		this.adjustVoltage = adjustVoltage == null ? null : adjustVoltage.trim();
+	}
+
+	public String getDeviceid() {
+		return deviceid;
+	}
+
+	public void setDeviceid(String deviceid) {
+		this.deviceid = deviceid == null ? null : deviceid.trim();
+	}
+
+	public String getVersion() {
+		return version;
+	}
+
+	public void setVersion(String version) {
+		this.version = version == null ? null : version.trim();
+	}
+
+	public String getHardver() {
+		return hardver;
+	}
+
+	public void setHardver(String hardver) {
+		this.hardver = hardver == null ? null : hardver.trim();
+	}
+
+	public String getMac() {
+		return mac;
+	}
+
+	public void setMac(String mac) {
+		this.mac = mac == null ? null : mac.trim();
+	}
+
+	public String getIotver() {
+		return iotver;
+	}
+
+	public void setIotver(String iotver) {
+		this.iotver = iotver == null ? null : iotver.trim();
+	}
+
+	public String getInalarm() {
+		return inalarm;
+	}
+
+	public void setInalarm(String inalarm) {
+		this.inalarm = inalarm == null ? null : inalarm.trim();
+	}
+
+	public WControlVo(String controlid, String proid, String recordtime, String charge, String imsi, String imei,
+			String iccid, String rsrp, String chn, String wifilevel, String cellid, String snr, String signal,
+			String temperature, String humidity, String adjustVoltage, String deviceid, String version, String hardver,
+			String mac, String iotver, String inalarm) {
+		super();
+		this.controlid = controlid;
+		this.proid = proid;
+		this.recordtime = recordtime;
+		this.charge = charge;
+		this.imsi = imsi;
+		this.imei = imei;
+		this.iccid = iccid;
+		this.rsrp = rsrp;
+		this.chn = chn;
+		this.wifilevel = wifilevel;
+		this.cellid = cellid;
+		this.snr = snr;
+		this.signals = signal;
+		this.temperature = temperature;
+		this.humidity = humidity;
+		this.adjustVoltage = adjustVoltage;
+		this.deviceid = deviceid;
+		this.version = version;
+		this.hardver = hardver;
+		this.mac = mac;
+		this.iotver = iotver;
+		this.inalarm = inalarm;
+	}
+
+}

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysPlantMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysPlant">
+    <id column="plantId" property="plantId" />
+    <result column="plantName" property="plantName" />
+  </resultMap>
+
+  <sql id="Base_List">
+    plantId, plantName
+  </sql>
+	
+  <select id="findAll" resultMap="BaseMap">
+		select <include refid="Base_List" /> from sys_plant
+   </select>
+
+  <insert id="insertPlant" parameterType="com.th.system.po.SysPlant">
+    insert into sys_plant
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="plantName != null">
+        plantName,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="plantName != null">
+        #{plantName},
+      </if>
+    </trim>
+  </insert>
+
+</mapper>

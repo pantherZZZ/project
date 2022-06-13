@@ -1,0 +1,213 @@
+package com.yy.data.udp;
+
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+
+import org.apache.log4j.Logger;
+import org.springframework.stereotype.Component;
+
+import com.yy.common.constant.MyConstants;
+import com.yy.common.utils.DateUtil;
+import com.yy.common.utils.JedisUtils;
+import com.yy.data.model.UdpRecord;
+
+@Component
+public class UdpStart {
+	private static Logger log = Logger.getLogger(UdpStart.class);
+
+	@Resource
+	private UdpService udpService;
+	public static DatagramSocket server = null;
+	public static DatagramSocket server_2 = null;
+	public static final byte[] b = new byte[0];
+	public static final byte[] b_2 = new byte[0];
+	// 维护一个本类的静态变量
+	public static UdpStart udpStart;
+
+	@PostConstruct
+	public void init() {
+		udpStart = this;
+		udpStart.udpService = this.udpService;
+	}
+
+	public DatagramSocket getDatagramSocket(Integer equtype) {
+		switch (equtype) {
+		case 1:
+			return server;
+		default:
+			return server_2;
+		}
+	}
+
+	// 服务器1启动
+	public static String startUdp_1() throws IOException {
+		MyConstants._1_haserror = false;
+		String serverPort = MyConstants._1_udp_serverPORT; // 端口号
+		try {
+			/* 创建服务端DatagramSocket */
+			log.info("_1_" + serverPort + "Server start running..." + DateUtil.getCurrentDateTime_SSS());
+			while (true) {
+				if (server == null) {
+					synchronized (b) {
+						if (server == null) {
+							server = new DatagramSocket(Integer.valueOf(serverPort));
+						}
+					}
+
+				}
+
+				/* 定义接收byte空间 */
+				byte[] buffer = new byte[300];
+				/* 将UDP数据包内容保存在byte中 */
+				DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
+				/* UDP接收数据包 */
+				server.receive(receivePacket);
+				// 下面可改为线程
+				/* 获取当前系统时间 */
+				String currentTime = DateUtil.getCurrentDateTime_SSS();
+				/* 处理客户端的输入 */
+				String message = new String(receivePacket.getData(), receivePacket.getOffset(),
+						receivePacket.getLength(), "GBK");
+				// 解析信息
+
+				Map<String, Object> analysisInfo = new MessageData().reveive(receivePacket.getData());
+
+				if (analysisInfo != null) {
+					if (analysisInfo.get("ignore") != null) {// 说明消息已经被解析过
+						return "1";
+					}
+				}
+				boolean validReceive = false;
+				String equid = null;
+				String chargecent = null;
+				String state = null;
+				String hex_message = null;
+
+				System.out.println("1======收到信号" + DateUtil.getCurrentDateTime_SSS());
+				String imei = null;
+				if (analysisInfo != null && "1".equals(analysisInfo.get("result"))) {
+					validReceive = true;
+					message = analysisInfo.get("messageInfo").toString();
+					if (analysisInfo.get("equid") != null)
+						equid = analysisInfo.get("equid").toString();
+					if (analysisInfo.get("charge") != null)
+						chargecent = analysisInfo.get("charge").toString();
+					if (analysisInfo.get("state") != null)
+						state = analysisInfo.get("state").toString();
+					if (analysisInfo.get("imei") != null)
+						imei = analysisInfo.get("imei").toString();
+					hex_message = analysisInfo.get("hex_message").toString();
+					if (equid == null) {
+						System.out.println("接收数据异常-设备id为空" + hex_message);
+					}
+					analysisInfo.put("port", receivePacket.getPort() + "");
+					if (analysisInfo.get("nosubmit") != null) {
+						// 不上报到业务系统中
+						System.out.println(hex_message);
+					} else {
+						// 对接业务，刷新更新标识 A
+						new Thread(new UdpAnalysisThread(currentTime.toString(), analysisInfo, udpStart.udpService))
+								.start();
+					}
+
+				}
+				// 将终端的ip和port保存，用逗号隔开
+				JedisUtils.set(MyConstants.equ_IP_PORT + equid,
+						receivePacket.getAddress().getHostAddress() + "," + receivePacket.getPort(),
+						MyConstants.equ_IP_PORT_cacheSeconds);
+				if (imei != null) {
+					// 如果查询ID时，因为没有equid 所有将ip与port绑定到imei上
+					JedisUtils.set(MyConstants.equ_IP_PORT + imei,
+							receivePacket.getAddress().getHostAddress() + "," + receivePacket.getPort(),
+							MyConstants.equ_IP_PORT_cacheSeconds);
+				}
+				UdpRecord record = new UdpRecord();
+				record.setAddress(receivePacket.getAddress().getHostAddress());
+				record.setChargecent(chargecent);
+				record.setEquid(equid);
+				record.setHex_message(hex_message);
+				record.setIsanswer("0");
+				record.setMessage(message);
+				record.setPort(receivePacket.getPort() + "");
+				record.setSendertime(DateUtil.getCurrentDateTime_SSS());
+				record.setState(state);
+				record.setType("1");
+				new Thread(new UdpRecordsThread(record, udpStart.udpService)).start();
+				String echo = receivePacket.getAddress().getHostAddress() + "::" + message + "::"
+						+ receivePacket.getPort();
+				echo = currentTime.toString() + "::" + echo;
+				/* 打印系统日志记录用户输入 */
+				System.out.println(echo);
+				/* 从客户端输入转化为byte */
+				List<byte[]> date_batch = new ArrayList<byte[]>();
+				byte[] data = null;
+				if (validReceive) {
+					if (analysisInfo.get("answer") != null) {
+						data = (byte[]) analysisInfo.get("answer");
+						if (analysisInfo.get("hex_message_answer") != null) {// 保存上发信息到记录
+							String hex_message_answer = analysisInfo.get("hex_message_answer") + "";
+							record = new UdpRecord();
+							record.setAddress(receivePacket.getAddress().getHostAddress());
+							record.setEquid(equid);
+							record.setHex_message(hex_message_answer);
+							record.setIsanswer("1");
+							record.setPort(receivePacket.getPort() + "");
+							record.setSendertime(currentTime.toString());
+							record.setType("1");
+							new Thread(new UdpRecordsThread(record, udpStart.udpService)).start();
+						}
+					} else if (analysisInfo.get("answer_batch") != null) {// 暂时未用到
+						date_batch.addAll((List<byte[]>) analysisInfo.get("answer_batch"));
+					}
+
+				} else {
+					data = message.getBytes("GBK");
+				}
+				// 循环date_batch发送以下指令
+				if (data != null) {
+					/* 将byte内容转化为UDP数据包 */
+					DatagramPacket sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(),
+							receivePacket.getPort());
+					/* UPD发送数据包 */
+					server.send(sendPacket);
+
+				}
+				try {
+
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				// return js;
+			}
+		} catch (SocketException e) {
+			e.printStackTrace();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			MyConstants._1_haserror = true;
+			/* 安全关闭Socket */
+			try {
+				if (server != null) {
+					server.close();
+					server = null;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return "";
+	}
+
+}

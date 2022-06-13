@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysDtuMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysDtu">
+    <id column="DTUid" property="DTUid" />
+    <result column="plantId" property="plantId" />
+    <result column="modelId" property="modelId" />
+    <result column="modelNumberId" property="modelNumberId" />
+    <result column="equipmentId" property="equipmentId" />
+ 	<result column="time" property="time" />
+ 	<result column="postId" property="postId" />
+ 	<result column="dtuName" property="dtuName" />
+  </resultMap>
+
+  <sql id="Base_List">
+    DTUid, plantId, modelId, modelNumberId,equipmentId,postId,dtuName
+  </sql>
+
+   <select id="findTimeCount" resultType="java.lang.Integer" parameterType="java.lang.String">
+		select count(DTUid) from sys_dtu where
+		time like concat('%',#{time},'%')
+  </select>
+
+ <select id="findDTUCount" resultType="java.lang.Integer">
+		select count(DTUid) from sys_dtu
+   </select>
+
+ <select id="findDTUModleCount" resultType="java.lang.Integer">
+		select count(DTUid) from sys_dtu
+		<where>
+		      modelId = #{modelId}
+		</where>
+   </select>
+
+    <select id="findByModelId" resultType="com.th.system.vo.SysDtuVo">
+		select d.DTUid,d.postId,d.plantId, d.modelId, d.modelNumberId,d.equipmentId
+		,p.plantName,e.dtuEquipmentName,m.modelNumberName,d.dtuName
+		from sys_dtu as d
+		inner join sys_plant as p
+		on p.plantId = d.plantId
+		inner join sys_dtuEquipment as e
+		on e.dtuEquipmentId = d.equipmentId
+		inner join sys_modelNumber as m
+		on m.modelNumberId = d.modelNumberId
+			<if test="modelId != null">
+		     and modelId = #{modelId}
+		   </if>
+		   LIMIT #{page},#{limit}
+   </select>
+
+    <select id="findById" resultType="com.th.system.vo.SysDtuVo">
+		select d.DTUid,d.postId, d.plantId, d.modelId, d.modelNumberId,d.equipmentId
+		,p.plantName,e.dtuEquipmentName,m.modelNumberName,d.dtuName
+		from sys_dtu as d
+		inner join sys_plant as p
+		on p.plantId = d.plantId
+		inner join sys_dtuEquipment as e
+		on e.dtuEquipmentId = d.equipmentId
+		inner join sys_modelNumber as m
+		on m.modelNumberId = d.modelNumberId
+		<where>
+			<if test="dtuId != null">
+		      DTUid = #{dtuId}
+		   </if>
+		</where>
+   </select>
+
+    <delete id="delDTU">
+  	DELETE from sys_dtu
+  	where DTUid = #{dtuId}
+  </delete>
+
+   <update id="updateDTU" parameterType="com.th.system.po.SysDtu">
+      update sys_dtu
+        <set>
+            <if test="plantId != null">plantId = #{SysDtu.plantId},</if>
+            <if test="modelId != null">typeId = #{SysDtu.typeId},</if>
+            <if test="modelNumberId != null">modelNumberId = #{SysDtu.modelNumberId},</if>
+            <if test="postId != null">postId = #{SysDtu.postId},</if>
+            <if test="dtuName != null">dtuName = #{SysDtu.dtuName},</if>
+        </set>
+        where DTUid = #{SysDtu.DTUid}
+   </update>
+
+   <insert id="insertDTU" parameterType="com.th.system.po.SysDtu">
+    insert into sys_dtu
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+        plantId,
+        modelId,
+        modelNumberId,
+        typeId,
+        time,
+        postId,
+        dtuName,
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="plantId != null">
+        #{plantId},
+      </if>
+      <if test="modelId != null">
+        #{modelId},
+      </if>
+        <if test="modelNumberId != null">
+        #{modelNumberId},
+      </if>
+      <if test="typeId != null">
+        #{typeId},
+      </if>
+      <if test="time != null">
+        #{time},
+      </if>
+      <if test="postId != null">
+        #{postId},
+      </if>
+      <if test="dtuName != null">
+        #{dtuName},
+      </if>
+    </trim>
+  </insert>
+
+    <select id="findAllDtu" resultType="com.th.system.po.SysDtu">
+        select sd.DTUid, sd.dtuName from sys_dtu sd
+        where sd.install='1'
+    </select>
+
+    <select id="findByNumber" resultType="com.th.system.po.SysEquipment">
+        SELECT se.equipmentId,se.modelId
+        FROM sys_equipment se LEFT JOIN sys_dtu sd
+        ON se.dtuId=sd.DTUid
+        WHERE
+        1=1
+        <if test="number != null and number != '' ">
+        and sd.postId=#{number}
+        </if>
+    </select>
+
+</mapper>

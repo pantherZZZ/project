@@ -1,0 +1,23 @@
+package com.yy.data.udp;
+
+import java.util.Map;
+
+public class UdpAnalysisThread implements Runnable {
+	String date;
+	UdpService udpserver;
+	Map<String, Object> analysisInfo;
+
+	public UdpAnalysisThread(String date, Map<String, Object> analysisInfo, UdpService udpserver) {
+		super();
+		this.date = date;
+		this.udpserver = udpserver;
+		this.analysisInfo = analysisInfo;
+	}
+
+	@Override
+	public void run() {
+
+		udpserver.analysisInfo(date, analysisInfo);
+
+	}
+}

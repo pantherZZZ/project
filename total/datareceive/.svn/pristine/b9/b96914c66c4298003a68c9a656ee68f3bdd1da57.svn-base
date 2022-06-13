@@ -1,0 +1,1395 @@
+package com.yy.data.answer;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.ServletInputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.DatatypeConverter;
+
+import org.apache.commons.codec.Decoder;
+import org.apache.commons.codec.binary.Base64;
+import sun.misc.BASE64Decoder; 
+import org.apache.commons.lang.CharEncoding;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.client.RestTemplate;
+
+import com.huawei.iotplatform.client.NorthApiException;
+import com.yy.common.constant.MyConstants;
+import com.yy.common.utils.DateUtil;
+import com.yy.common.utils.JsonUtil;
+import com.yy.data.model.DeviceDataInfo;
+import com.yy.data.service.DeviceDataInfoService;
+import com.yy.redis.RedisConstants;
+import com.yy.redis.utils.RedisUtil;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+@Controller
+@RequestMapping(value = "/water")
+public class WaterAnswer {
+	private static String secret = "uvxMm76byz";
+	private static String application = "N5jptAnsXn";
+	private static String MasterKey = "2bcdf84c5f094508a4a8ea8fc4d340d4";
+	private String operator = "10513169";
+	private static String productId = "15024188";
+	private String ttl = "180";//超时限制秒数超过180秒没送达就超时
+	@Autowired
+	private DeviceDataInfoService deviceDataInfoService;
+	
+	@Autowired
+	private RedisUtil redisUtil;
+		
+		/**
+			 * 添加设备
+			 */
+				  @ResponseBody
+				  
+				  @RequestMapping(value = "/addEquInfo") 
+				  public String addEquInfo(String imei) throws
+				  Exception { 
+					  JSONObject resultObj=addEqu(imei,imei,imei);
+					  return  JsonUtil.writeAsString(resultObj); 
+				}
+				  
+
+
+	/**
+	 * 读取水表数据
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/readWaterData")
+	public String readWaterData(String deviceId) throws Exception {
+		String version = "20190712225145";// api版本，到文档中心->使能平台API文档打开要调用的api可以找到此值
+		JSONObject resultObj=new JSONObject();
+		// 下面以增加设备的API为例【具体信息请以使能平台的API文档为准】。
+
+		// 请求BODY,到文档中心->使能平台API文档打开要调用的api中，在“请求BODY”中查看
+		//指令内容 dataType:1字符串 2十六进制数  isReturn:是否带响应结果，1：带响应结果，2：不带响应结果  payload:指令内容
+		String comend="FEFEFE6810020009110000000103901F004716";
+		String data="{\r\n" + 
+				"                  \"dataType\": 1,\r\n" + 
+				"                  \"isReturn\": 1,\r\n" + 
+				"                  \"payload\": \""+comend+"\"\r\n" + 
+				"		   }";
+		String bodyString = "{\"content\": "+data+",\r\n" + 
+				"  \"deviceId\": \""+deviceId+"\",\r\n" + 
+				"  \"operator\": \""+operator+"\",\r\n" + 
+				"  \"productId\": "+productId+",\r\n" + 
+				"  \"ttl\": "+ttl+",\r\n" + 
+				"  \"deviceGroupId\":  100,\r\n" + 
+				"  \"level\": 1}";
+
+		CloseableHttpClient httpClient = null;
+		HttpResponse response = null;
+		httpClient = HttpClientBuilder.create().build();
+
+		long offset = getTimeOffset();// 获取时间偏移量，方法见前面
+
+		// 构造请求的URL，具体参考文档中心->使能平台API文档中的请求地址和访问路径
+		URIBuilder uriBuilder = new URIBuilder();
+		uriBuilder.setScheme("http");
+		uriBuilder.setHost("ag-api.ctwing.cn/aep_device_command"); // 请求地址
+		uriBuilder.setPath("/command"); // 访问路径，可以在API文档中对应API中找到此访问路径
+
+		// 在请求的URL中添加参数，具体参考文档中心->API文档中请求参数说明
+		// (如果有MasterKey，将MasterKey加到head中，不加在此处)
+		uriBuilder.addParameter("productId", productId);// 如果没有其他参数，此行不要
+		
+		HttpPost httpPost = new HttpPost(uriBuilder.build());// 构造post请求
+
+		long timestamp = System.currentTimeMillis() + offset;// 获取时间戳
+		Date date = new Date(timestamp);
+		SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+		String dataString = dateFormat.format(date);// 生成格式化的日期字符串
+
+		// head中添加公共参数
+		httpPost.addHeader("MasterKey", MasterKey);// MasterKey加在此处head中
+		httpPost.addHeader("application", application);
+		httpPost.addHeader("timestamp", "" + timestamp);
+		httpPost.addHeader("version", version);
+		httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
+		httpPost.addHeader("Date", dataString);
+
+		// 下列注释的head暂时未用到
+		// httpPost.addHeader("sdk", "GIT: a4fb7fca");
+		// httpPost.addHeader("Accept", "gzip,deflate");
+		// httpPost.addHeader("User-Agent", "Telecom API Gateway Java SDK");
+
+		// 构造签名需要的参数,如果参数中有MasterKey，则添加来参与签名计算,
+		// 其他参数根据实际API从URL中获取,如有其他参数,写法参考get示例
+		Map<String, String> param = new HashMap<String, String>();
+		param.put("MasterKey", MasterKey);
+
+		// 添加签名
+		httpPost.addHeader("signature", sign(param, timestamp, application, secret, bodyString.getBytes()));
+
+		// 请求添加body部分
+		httpPost.setEntity(new StringEntity(bodyString));
+
+		try {
+			// 发送请求
+			response = httpClient.execute(httpPost);
+
+			// 从response获取响应结果 
+			JSONArray json = JSONArray.fromObject("["+new String(EntityUtils.toByteArray(response.getEntity()))+"]");
+			JSONObject job = json.getJSONObject(0); 
+			String resultcode=String.valueOf(job.get("code"));
+		  if("0".equals(resultcode)) {
+				
+				 String result=String.valueOf(job.get("result")); 
+				 JSONArray payloadjson =JSONArray.fromObject("["+result+"]"); 
+				 JSONObject pob = payloadjson.getJSONObject(0); 
+				 String commandId=String.valueOf(pob.get("commandId"));
+				
+			  resultObj.put("result", "1");
+			  resultObj.put("commandId",commandId);
+		  }else {
+			  resultObj.put("result", "0");
+			  resultObj.put("commandId", "");
+		  }
+		  httpClient.close(); 
+		  } catch (ClientProtocolException e) {
+		  e.printStackTrace(); 
+		  } catch (IOException e) {
+			  e.printStackTrace(); 
+		}
+		return  JsonUtil.writeAsString(resultObj); 
+	}
+	
+	
+	
+	/**
+	 * 远程开阀门
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/fastopen")
+	public String fastopen(String deviceId) throws Exception {
+		String version = "20190712225145";// api版本，到文档中心->使能平台API文档打开要调用的api可以找到此值
+		JSONObject resultObj=new JSONObject();
+		// 下面以增加设备的API为例【具体信息请以使能平台的API文档为准】。
+
+		// 请求BODY,到文档中心->使能平台API文档打开要调用的api中，在“请求BODY”中查看
+		//指令内容 dataType:1字符串 2十六进制数  isReturn:是否带响应结果，1：带响应结果，2：不带响应结果  payload:指令内容
+		String comend="FEFEFE6810AAAAAAAAAAAAAA0803638B00AF16";
+		String data="{\r\n" + 
+				"                  \"dataType\": 1,\r\n" + 
+				"                  \"isReturn\": 1,\r\n" + 
+				"                  \"payload\": \""+comend+"\"\r\n" + 
+				"		   }";
+		String bodyString = "{\"content\": "+data+",\r\n" + 
+				"  \"deviceId\": \""+deviceId+"\",\r\n" + 
+				"  \"operator\": \""+operator+"\",\r\n" + 
+				"  \"productId\": "+productId+",\r\n" + 
+				"  \"ttl\": "+ttl+",\r\n" + 
+				"  \"deviceGroupId\":  100,\r\n" + 
+				"  \"level\": 1}";
+
+		CloseableHttpClient httpClient = null;
+		HttpResponse response = null;
+		httpClient = HttpClientBuilder.create().build();
+
+		long offset = getTimeOffset();// 获取时间偏移量，方法见前面
+
+		// 构造请求的URL，具体参考文档中心->使能平台API文档中的请求地址和访问路径
+		URIBuilder uriBuilder = new URIBuilder();
+		uriBuilder.setScheme("http");
+		uriBuilder.setHost("ag-api.ctwing.cn/aep_device_command"); // 请求地址
+		uriBuilder.setPath("/command"); // 访问路径，可以在API文档中对应API中找到此访问路径
+
+		// 在请求的URL中添加参数，具体参考文档中心->API文档中请求参数说明
+		// (如果有MasterKey，将MasterKey加到head中，不加在此处)
+		uriBuilder.addParameter("productId", productId);// 如果没有其他参数，此行不要
+
+		HttpPost httpPost = new HttpPost(uriBuilder.build());// 构造post请求
+
+		long timestamp = System.currentTimeMillis() + offset;// 获取时间戳
+		Date date = new Date(timestamp);
+		SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+		String dataString = dateFormat.format(date);// 生成格式化的日期字符串
+
+		// head中添加公共参数
+		httpPost.addHeader("MasterKey", MasterKey);// MasterKey加在此处head中
+		httpPost.addHeader("application", application);
+		httpPost.addHeader("timestamp", "" + timestamp);
+		httpPost.addHeader("version", version);
+		httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
+		httpPost.addHeader("Date", dataString);
+
+		// 下列注释的head暂时未用到
+		// httpPost.addHeader("sdk", "GIT: a4fb7fca");
+		// httpPost.addHeader("Accept", "gzip,deflate");
+		// httpPost.addHeader("User-Agent", "Telecom API Gateway Java SDK");
+
+		// 构造签名需要的参数,如果参数中有MasterKey，则添加来参与签名计算,
+		// 其他参数根据实际API从URL中获取,如有其他参数,写法参考get示例
+		Map<String, String> param = new HashMap<String, String>();
+		param.put("MasterKey", MasterKey);
+
+		// 添加签名
+		httpPost.addHeader("signature", sign(param, timestamp, application, secret, bodyString.getBytes()));
+
+		// 请求添加body部分
+		httpPost.setEntity(new StringEntity(bodyString));
+
+		try {
+			// 发送请求
+			response = httpClient.execute(httpPost);
+
+			// 从response获取响应结果 
+			JSONArray json = JSONArray.fromObject("["+new String(EntityUtils.toByteArray(response.getEntity()))+"]");
+			System.out.println("断电反馈信息："+json.toString());
+			JSONObject job = json.getJSONObject(0); 
+			String resultcode=String.valueOf(job.get("code"));
+			if("0".equals(resultcode)) {
+				String result=String.valueOf(job.get("result"));
+				JSONArray payloadjson = JSONArray.fromObject("["+result+"]");
+				JSONObject pob = payloadjson.getJSONObject(0); 
+				String commandId=String.valueOf(pob.get("commandId"));
+				resultObj.put("result", "1");
+				resultObj.put("commandId", commandId);
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("commandId", "");
+			}
+
+			httpClient.close();
+		} catch (ClientProtocolException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return JsonUtil.writeAsString(resultObj); 
+	}
+	
+	
+	/**
+	 * 远程关阀门
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/fastclose")
+	public String fastclose(String deviceId) throws Exception {
+		String version = "20190712225145";// api版本，到文档中心->使能平台API文档打开要调用的api可以找到此值
+		JSONObject resultObj=new JSONObject();
+		// 下面以增加设备的API为例【具体信息请以使能平台的API文档为准】。
+
+		// 请求BODY,到文档中心->使能平台API文档打开要调用的api中，在“请求BODY”中查看
+		//指令内容 dataType:1字符串 2十六进制数  isReturn:是否带响应结果，1：带响应结果，2：不带响应结果  payload:指令内容
+		String comend="FEFEFE6810AAAAAAAAAAAAAA0903587C00AF16";
+		String data="{\r\n" + 
+				"                  \"dataType\": 1,\r\n" + 
+				"                  \"isReturn\": 1,\r\n" + 
+				"                  \"payload\": \""+comend+"\"\r\n" + 
+				"		   }";
+		String bodyString = "{\"content\": "+data+",\r\n" + 
+				"  \"deviceId\": \""+deviceId+"\",\r\n" + 
+				"  \"operator\": \""+operator+"\",\r\n" + 
+				"  \"productId\": "+productId+",\r\n" + 
+				"  \"ttl\": "+ttl+",\r\n" + 
+				"  \"deviceGroupId\":  100,\r\n" + 
+				"  \"level\": 1}";
+
+		CloseableHttpClient httpClient = null;
+		HttpResponse response = null;
+		httpClient = HttpClientBuilder.create().build();
+
+		long offset = getTimeOffset();// 获取时间偏移量，方法见前面
+
+		// 构造请求的URL，具体参考文档中心->使能平台API文档中的请求地址和访问路径
+		URIBuilder uriBuilder = new URIBuilder();
+		uriBuilder.setScheme("http");
+		uriBuilder.setHost("ag-api.ctwing.cn/aep_device_command"); // 请求地址
+		uriBuilder.setPath("/command"); // 访问路径，可以在API文档中对应API中找到此访问路径
+
+		// 在请求的URL中添加参数，具体参考文档中心->API文档中请求参数说明
+		// (如果有MasterKey，将MasterKey加到head中，不加在此处)
+		uriBuilder.addParameter("productId", productId);// 如果没有其他参数，此行不要
+
+		HttpPost httpPost = new HttpPost(uriBuilder.build());// 构造post请求
+
+		long timestamp = System.currentTimeMillis() + offset;// 获取时间戳
+		Date date = new Date(timestamp);
+		SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+		String dataString = dateFormat.format(date);// 生成格式化的日期字符串
+
+		// head中添加公共参数
+		httpPost.addHeader("MasterKey", MasterKey);// MasterKey加在此处head中
+		httpPost.addHeader("application", application);
+		httpPost.addHeader("timestamp", "" + timestamp);
+		httpPost.addHeader("version", version);
+		httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
+		httpPost.addHeader("Date", dataString);
+
+		// 下列注释的head暂时未用到
+		// httpPost.addHeader("sdk", "GIT: a4fb7fca");
+		// httpPost.addHeader("Accept", "gzip,deflate");
+		// httpPost.addHeader("User-Agent", "Telecom API Gateway Java SDK");
+
+		// 构造签名需要的参数,如果参数中有MasterKey，则添加来参与签名计算,
+		// 其他参数根据实际API从URL中获取,如有其他参数,写法参考get示例
+		Map<String, String> param = new HashMap<String, String>();
+		param.put("MasterKey", MasterKey);
+
+		// 添加签名
+		httpPost.addHeader("signature", sign(param, timestamp, application, secret, bodyString.getBytes()));
+
+		// 请求添加body部分
+		httpPost.setEntity(new StringEntity(bodyString));
+
+		try {
+			// 发送请求
+			response = httpClient.execute(httpPost);
+
+			// 从response获取响应结果 
+			JSONArray json = JSONArray.fromObject("["+new String(EntityUtils.toByteArray(response.getEntity()))+"]");
+			System.out.println("断电反馈信息："+json.toString());
+			JSONObject job = json.getJSONObject(0); 
+			String resultcode=String.valueOf(job.get("code"));
+			if("0".equals(resultcode)) {
+				String result=String.valueOf(job.get("result"));
+				JSONArray payloadjson = JSONArray.fromObject("["+result+"]");
+				JSONObject pob = payloadjson.getJSONObject(0); 
+				String commandId=String.valueOf(pob.get("commandId"));
+				resultObj.put("result", "1");
+				resultObj.put("commandId", commandId);
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("commandId", "");
+			}
+
+			httpClient.close();
+		} catch (ClientProtocolException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return JsonUtil.writeAsString(resultObj); 
+	}
+	
+	
+	/**
+	 * 获取设备状态
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/getDeviceState")
+	public String getDeviceState(String deviceId) throws Exception {
+		String version = "20190712225145";// api版本，到文档中心->使能平台API文档打开要调用的api可以找到此值
+		JSONObject resultObj=new JSONObject();
+		// 下面以增加设备的API为例【具体信息请以使能平台的API文档为准】。
+
+		// 请求BODY,到文档中心->使能平台API文档打开要调用的api中，在“请求BODY”中查看
+		//指令内容 dataType:1字符串 2十六进制数  isReturn:是否带响应结果，1：带响应结果，2：不带响应结果  payload:指令内容
+		String payload[]=new String[6];
+		payload[0]="11";
+		payload[1]="03";
+		payload[2]="01";
+		payload[3]="01";
+		payload[4]="05";
+		String comend=payload[0]+payload[1]+payload[2]+payload[3]+payload[4];
+		String data="{\r\n" + 
+				"                  \"dataType\": 1,\r\n" + 
+				"                  \"isReturn\": 1,\r\n" + 
+				"                  \"payload\": \""+comend+"\"\r\n" + 
+				"		   }";
+		String bodyString = "{\"content\": "+data+",\r\n" + 
+				"  \"deviceId\": \""+deviceId+"\",\r\n" + 
+				"  \"operator\": \""+operator+"\",\r\n" + 
+				"  \"productId\": "+productId+",\r\n" + 
+				"  \"ttl\": "+ttl+",\r\n" + 
+				"  \"deviceGroupId\":  100,\r\n" + 
+				"  \"level\": 1}";
+
+		CloseableHttpClient httpClient = null;
+		HttpResponse response = null;
+		httpClient = HttpClientBuilder.create().build();
+
+		long offset = getTimeOffset();// 获取时间偏移量，方法见前面
+
+		// 构造请求的URL，具体参考文档中心->使能平台API文档中的请求地址和访问路径
+		URIBuilder uriBuilder = new URIBuilder();
+		uriBuilder.setScheme("http");
+		uriBuilder.setHost("ag-api.ctwing.cn/aep_device_command"); // 请求地址
+		uriBuilder.setPath("/command"); // 访问路径，可以在API文档中对应API中找到此访问路径
+
+		// 在请求的URL中添加参数，具体参考文档中心->API文档中请求参数说明
+		// (如果有MasterKey，将MasterKey加到head中，不加在此处)
+		uriBuilder.addParameter("productId", productId);// 如果没有其他参数，此行不要
+
+		HttpPost httpPost = new HttpPost(uriBuilder.build());// 构造post请求
+
+		long timestamp = System.currentTimeMillis() + offset;// 获取时间戳
+		Date date = new Date(timestamp);
+		SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+		String dataString = dateFormat.format(date);// 生成格式化的日期字符串
+
+		// head中添加公共参数
+		httpPost.addHeader("MasterKey", MasterKey);// MasterKey加在此处head中
+		httpPost.addHeader("application", application);
+		httpPost.addHeader("timestamp", "" + timestamp);
+		httpPost.addHeader("version", version);
+		httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
+		httpPost.addHeader("Date", dataString);
+
+		// 下列注释的head暂时未用到
+		// httpPost.addHeader("sdk", "GIT: a4fb7fca");
+		// httpPost.addHeader("Accept", "gzip,deflate");
+		// httpPost.addHeader("User-Agent", "Telecom API Gateway Java SDK");
+
+		// 构造签名需要的参数,如果参数中有MasterKey，则添加来参与签名计算,
+		// 其他参数根据实际API从URL中获取,如有其他参数,写法参考get示例
+		Map<String, String> param = new HashMap<String, String>();
+		param.put("MasterKey", MasterKey);
+
+		// 添加签名
+		httpPost.addHeader("signature", sign(param, timestamp, application, secret, bodyString.getBytes()));
+
+		// 请求添加body部分
+		httpPost.setEntity(new StringEntity(bodyString));
+
+		try {
+			// 发送请求
+			response = httpClient.execute(httpPost);
+
+			// 从response获取响应结果 
+			JSONArray json = JSONArray.fromObject("["+new String(EntityUtils.toByteArray(response.getEntity()))+"]");
+			System.out.println("断电反馈信息："+json.toString());
+			JSONObject job = json.getJSONObject(0); 
+			String resultcode=String.valueOf(job.get("code"));
+			if("0".equals(resultcode)) {
+				String result=String.valueOf(job.get("result"));
+				JSONArray payloadjson = JSONArray.fromObject("["+result+"]");
+				JSONObject pob = payloadjson.getJSONObject(0); 
+				String commandId=String.valueOf(pob.get("commandId"));
+				resultObj.put("result", "1");
+				resultObj.put("commandId", commandId);
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("commandId", "");
+			}
+
+			httpClient.close();
+		} catch (ClientProtocolException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return JsonUtil.writeAsString(resultObj); 
+	}
+	
+	
+	
+	/**
+	 * 获取设备用电量
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/getDeviceQuantity")
+	public String getDeviceQuantity(String deviceId) throws Exception {
+		String version = "20190712225145";// api版本，到文档中心->使能平台API文档打开要调用的api可以找到此值
+		JSONObject resultObj=new JSONObject();
+		// 下面以增加设备的API为例【具体信息请以使能平台的API文档为准】。
+
+		// 请求BODY,到文档中心->使能平台API文档打开要调用的api中，在“请求BODY”中查看
+		//指令内容 dataType:1字符串 2十六进制数  isReturn:是否带响应结果，1：带响应结果，2：不带响应结果  payload:指令内容
+		String payload[]=new String[6];
+		payload[0]="11";
+		payload[1]="03";
+		payload[2]="01";
+		payload[3]="02";
+		payload[4]="06";
+		String comend=payload[0]+payload[1]+payload[2]+payload[3]+payload[4];
+		String data="{\r\n" + 
+				"                  \"dataType\": 1,\r\n" + 
+				"                  \"isReturn\": 1,\r\n" + 
+				"                  \"payload\": \""+comend+"\"\r\n" + 
+				"		   }";
+		String bodyString = "{\"content\": "+data+",\r\n" + 
+				"  \"deviceId\": \""+deviceId+"\",\r\n" + 
+				"  \"operator\": \""+operator+"\",\r\n" + 
+				"  \"productId\": "+productId+",\r\n" + 
+				"  \"ttl\": "+ttl+",\r\n" + 
+				"  \"deviceGroupId\":  100,\r\n" + 
+				"  \"level\": 1}";
+
+		CloseableHttpClient httpClient = null;
+		HttpResponse response = null;
+		httpClient = HttpClientBuilder.create().build();
+
+		long offset = getTimeOffset();// 获取时间偏移量，方法见前面
+
+		// 构造请求的URL，具体参考文档中心->使能平台API文档中的请求地址和访问路径
+		URIBuilder uriBuilder = new URIBuilder();
+		uriBuilder.setScheme("http");
+		uriBuilder.setHost("ag-api.ctwing.cn/aep_device_command"); // 请求地址
+		uriBuilder.setPath("/command"); // 访问路径，可以在API文档中对应API中找到此访问路径
+
+		// 在请求的URL中添加参数，具体参考文档中心->API文档中请求参数说明
+		// (如果有MasterKey，将MasterKey加到head中，不加在此处)
+		uriBuilder.addParameter("productId", productId);// 如果没有其他参数，此行不要
+
+		HttpPost httpPost = new HttpPost(uriBuilder.build());// 构造post请求
+
+		long timestamp = System.currentTimeMillis() + offset;// 获取时间戳
+		Date date = new Date(timestamp);
+		SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+		String dataString = dateFormat.format(date);// 生成格式化的日期字符串
+
+		// head中添加公共参数
+		httpPost.addHeader("MasterKey", MasterKey);// MasterKey加在此处head中
+		httpPost.addHeader("application", application);
+		httpPost.addHeader("timestamp", "" + timestamp);
+		httpPost.addHeader("version", version);
+		httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
+		httpPost.addHeader("Date", dataString);
+
+		// 下列注释的head暂时未用到
+		// httpPost.addHeader("sdk", "GIT: a4fb7fca");
+		// httpPost.addHeader("Accept", "gzip,deflate");
+		// httpPost.addHeader("User-Agent", "Telecom API Gateway Java SDK");
+
+		// 构造签名需要的参数,如果参数中有MasterKey，则添加来参与签名计算,
+		// 其他参数根据实际API从URL中获取,如有其他参数,写法参考get示例
+		Map<String, String> param = new HashMap<String, String>();
+		param.put("MasterKey", MasterKey);
+
+		// 添加签名
+		httpPost.addHeader("signature", sign(param, timestamp, application, secret, bodyString.getBytes()));
+
+		// 请求添加body部分
+		httpPost.setEntity(new StringEntity(bodyString));
+
+		try {
+			// 发送请求
+			response = httpClient.execute(httpPost);
+
+			// 从response获取响应结果 
+			JSONArray json = JSONArray.fromObject("["+new String(EntityUtils.toByteArray(response.getEntity()))+"]");
+			System.out.println("断电反馈信息："+json.toString());
+			JSONObject job = json.getJSONObject(0); 
+			String resultcode=String.valueOf(job.get("code"));
+			if("0".equals(resultcode)) {
+				String result=String.valueOf(job.get("result"));
+				JSONArray payloadjson = JSONArray.fromObject("["+result+"]");
+				JSONObject pob = payloadjson.getJSONObject(0); 
+				String commandId=String.valueOf(pob.get("commandId"));
+				resultObj.put("result", "1");
+				resultObj.put("commandId", commandId);
+			}else {
+				resultObj.put("result", "0");
+				resultObj.put("commandId", "");
+			}
+
+			httpClient.close();
+		} catch (ClientProtocolException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return JsonUtil.writeAsString(resultObj); 
+	}
+	
+	
+	
+	/**
+	 * 设备数据接收
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/getEquSendData")
+	public String getEquSendData(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(request.getInputStream(),"utf-8"));
+		DeviceDataInfo deviceDataInfo=new DeviceDataInfo();
+		String datatime=DateUtil.getCurrentDateTime();
+		MyConstants myConstants=new MyConstants();
+		Map<String,String> params=new HashMap<>();
+		RestTemplate restTemplate=new RestTemplate();
+		String deviceId="";
+		String url=myConstants.productsServerUrl;
+		deviceDataInfo.setDatatime(datatime);
+        StringBuffer sb = new StringBuffer("");
+        String temp;
+        while ((temp = br.readLine()) != null){
+            sb.append(temp);
+        }
+        br.close();
+        //真正接收到的数据
+        String result = sb.toString();
+		JSONArray json = JSONArray.fromObject("["+result+"]");
+		JSONObject job = json.getJSONObject(0); 
+		String productId=String.valueOf(job.get("productId"));
+		String deviceid=String.valueOf(job.get("deviceId"));
+		String datainfoid = UUID.randomUUID().toString().replace("-", "");
+		deviceDataInfo.setDatainfoid(datainfoid);
+		deviceDataInfo.setDeviceid(deviceid);
+		String payload=String.valueOf(job.get("payload"));
+		System.out.println("payload:"+payload);
+		response.setStatus(200);
+		if(StringUtils.isNotBlank(payload)&&!"null".equals(payload)) {
+			JSONArray payloadjson = JSONArray.fromObject("["+payload+"]");
+			JSONObject pob = payloadjson.getJSONObject(0); 
+			String appdata=String.valueOf(pob.get("APPdata"));
+			deviceDataInfo.setHisdata(appdata);
+			Base64 base64 = new Base64();
+			BASE64Decoder decoder = new BASE64Decoder();
+			byte[] buffer=DatatypeConverter.parseBase64Binary(appdata);
+			String data3=new String(buffer, "UTF-8");
+			String buffercode=DatatypeConverter.printHexBinary(buffer);
+			deviceDataInfo.setDatacontent(buffercode);
+			String title=buffercode.substring(0, 2);
+			deviceDataInfo.setIsSend("0");
+			deviceDataInfoService.saveDeviceDataInfo(deviceDataInfo);
+			System.out.println("title:"+title);
+			System.out.println("buffercode:"+buffercode);
+			if("1B".equals(title)) {
+				String typecode=buffercode.substring(2, 8);
+				System.out.println("typecode:"+typecode);
+				if("040302".equals(typecode)) {//
+					System.out.println("通电成功");
+					if(redisUtil.get(RedisConstants.datebase5,deviceid)!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase5,deviceid))) {//已发送的通电指令缓存删掉
+						redisUtil.del(RedisConstants.datebase5, deviceid);
+						List<String> devicelist=(List<String>) redisUtil.get(RedisConstants.datebase5, "senddevices");
+						devicelist.remove(deviceid);
+						redisUtil.set(RedisConstants.datebase5,"senddevices",devicelist);
+					}
+					if(redisUtil.get(RedisConstants.datebase1,deviceid)!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase1,deviceid))) {//存在红外指令要发送
+						String redcode=String.valueOf(redisUtil.get(RedisConstants.datebase1,deviceid));
+						List<String> devicelist=new ArrayList();
+						if(redisUtil.get(RedisConstants.datebase6,"senddevices")!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase6,"senddevices"))) {
+							devicelist=(List<String>) redisUtil.get(RedisConstants.datebase6, "senddevices");
+							devicelist.add(deviceid);
+						}else {
+							devicelist.add(deviceid);
+						}
+						redisUtil.set(RedisConstants.datebase6,deviceid,redcode);//红外已发送放入缓存
+						redisUtil.set(RedisConstants.datebase6,"senddevices",devicelist);//红外已发送放入缓存
+						redisUtil.del(RedisConstants.datebase1, deviceid);//删除待发送的缓存
+					}
+					String actionUrl=url+myConstants.updateDeviceStateDeviceUrl+"?deviceid="+deviceid+"&state=1";
+					ResponseEntity<String> responseEntity=restTemplate.getForEntity(actionUrl,String.class,params);
+					//JSONArray jsStr = JSONArray.fromObject("["+responseEntity.getBody()+"]");
+				}else if("070303".equals(typecode)) {//正常断电
+					System.out.println("正常断电");
+					if(redisUtil.get(RedisConstants.datebase7,deviceid)!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase7,deviceid))) {//已发送的无红外断电指令缓存删掉
+						redisUtil.del(RedisConstants.datebase7, deviceid);
+						List<String> devicelist=(List<String>) redisUtil.get(RedisConstants.datebase7, "senddevices");
+						devicelist.remove(deviceid);
+						redisUtil.set(RedisConstants.datebase7,"senddevices",devicelist);
+					}
+					if(redisUtil.get(RedisConstants.datebase9,deviceid)!=null) {//已发送的红外断电指令缓存删掉
+						redisUtil.del(RedisConstants.datebase9, deviceid);
+						List<String> devicelist=(List<String>) redisUtil.get(RedisConstants.datebase9, "senddevices");
+						for(int i=0;i<devicelist.size();i++) {
+							String nowdeviceid=devicelist.get(i);
+							if(deviceid.equals(nowdeviceid)) {
+								devicelist.remove(i);
+								break;
+							}
+						}
+						if(devicelist.size()>0) {
+							redisUtil.set(RedisConstants.datebase9,"senddevices",devicelist);
+						}else {
+							redisUtil.del(RedisConstants.datebase9,"senddevices");
+						}
+						
+					}
+					String num1=buffercode.substring(8, 16);
+					int userpower=covert(num1);
+					String actionUrl=url+myConstants.updateDeviceStateDeviceUrl+"?deviceid="+deviceid+"&state=0&userpower="+String.valueOf(userpower);
+					ResponseEntity<String> responseEntity=restTemplate.getForEntity(actionUrl,String.class,params);
+				}else if("080304".equals(typecode)) {//异常断电
+					System.out.println("异常断电");
+					if(redisUtil.get(RedisConstants.datebase7,deviceid)!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase7,deviceid))) {//已发送的断电指令缓存删掉
+						redisUtil.del(RedisConstants.datebase7, deviceid);
+						List<String> devicelist=(List<String>) redisUtil.get(RedisConstants.datebase7, "senddevices");
+						devicelist.remove(deviceid);
+						redisUtil.set(RedisConstants.datebase7,"senddevices",devicelist);
+					}
+					if(redisUtil.get(RedisConstants.datebase5,deviceid)!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase5,deviceid))) {//已发送的通电指令缓存删掉
+						redisUtil.del(RedisConstants.datebase5, deviceid);
+						List<String> devicelist=(List<String>) redisUtil.get(RedisConstants.datebase5, "senddevices");
+						devicelist.remove(deviceid);
+						redisUtil.set(RedisConstants.datebase5,"senddevices",devicelist);
+					}
+					if(redisUtil.get(RedisConstants.datebase1,deviceid)!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase1,deviceid))) {//存在红外指令要发送
+						redisUtil.del(RedisConstants.datebase1, deviceid);//删除待发送的缓存
+						
+					}
+					String num1=buffercode.substring(8, 16);
+					int userpower=covert(num1);
+					
+					String num2=buffercode.substring(16, 18);
+					int electric=covert(num2);
+					
+					String actionUrl=url+myConstants.updateDeviceStateDeviceUrl+"?deviceid="+deviceid+"&state=-1&userpower="+String.valueOf(userpower)+"&electric="+electric;
+					ResponseEntity<String> responseEntity=restTemplate.getForEntity(actionUrl,String.class,params);
+				}else if("030305".equals(typecode)) {//红外已发送，续电成功
+					if(redisUtil.get(RedisConstants.datebase2, deviceid)!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase2,deviceid))) {//存在红外开机指令要发送
+						redisUtil.del(RedisConstants.datebase2, deviceid);
+					}else if(redisUtil.get(RedisConstants.datebase6, deviceid)!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase6,deviceid))) {
+						redisUtil.del(RedisConstants.datebase6, deviceid);
+						if(redisUtil.get(RedisConstants.datebase6,"senddevices")!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase6,"senddevices"))) {
+							List<String> devicelist=(List<String>) redisUtil.get(RedisConstants.datebase6, "senddevices");
+							for(int i=0;i<devicelist.size();i++) {
+								if(deviceid.equals(devicelist.get(i))) {
+									devicelist.remove(i);
+									break;
+								}
+							}
+							if(devicelist.size()>0) {
+								redisUtil.set(RedisConstants.datebase6,"senddevices",devicelist);//红外已发送放入缓存
+							}else {
+								redisUtil.del(RedisConstants.datebase6, "senddevices");
+							}
+						}
+						
+						
+					}else if(redisUtil.get(RedisConstants.datebase8, deviceid)!=null&&!"null".equals(redisUtil.get(RedisConstants.datebase8,deviceid))) {
+						redisUtil.del(RedisConstants.datebase8, deviceid);
+						List<String> devicelist=(List<String>) redisUtil.get(RedisConstants.datebase8, "senddevices");
+						for(int i=0;i<devicelist.size();i++) {
+							String nowdeviceid=devicelist.get(i);
+							if(deviceid.equals(nowdeviceid)) {
+								devicelist.remove(i);
+								break;
+							}
+						}
+						if(devicelist.size()>0) {
+							redisUtil.set(RedisConstants.datebase8,"senddevices",devicelist);
+						}else {
+							redisUtil.del(RedisConstants.datebase8,"senddevices");
+						}
+					}
+					
+					
+					
+				}else if("1C0301".equals(typecode)) {//首次通电上报蓝牙编号和IMEI 
+					System.out.println("通电激活");
+					String imei=buffercode.substring(8, 23);
+					String bleuecode=buffercode.substring(24, buffercode.length()-2);
+					String bluename="";
+					for(int i=0;i<bleuecode.length()-1;i++) {
+						String code=bleuecode.substring(i, i+2);
+						String name=hexStr2Str(code);
+						if(StringUtils.isNotBlank(bluename)) {
+							bluename=bluename+name;
+						}else {
+							bluename=name;
+						}
+						i++;
+					}
+					String deviceno=getMD5Str(bluename);
+						String actionUrl=url+myConstants.registUrl+"?imei="+imei+"&bluename="+bluename+"&deviceno="+deviceno;
+						ResponseEntity<String> responseEntity=restTemplate.getForEntity(actionUrl,String.class,params);
+					
+					
+				}else if("E90306".equals(typecode)) {//学习到的红外码
+					String commandCode=buffercode.substring(8, payload.length()-2);
+					System.out.println("学习到的红外码："+commandCode);
+					String actionUrl=url+myConstants.receciveRedCodeUrl+"?deviceid="+deviceid+"&commandCode="+commandCode;
+					ResponseEntity<String> responseEntity=restTemplate.getForEntity(actionUrl,String.class,params);
+				}
+			}
+		}
+		
+		return "HTTP 200";
+	}
+	
+	
+	/**
+	 * 门锁数据接收
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/getDoorSendData")
+	public String getDoorSendData(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(request.getInputStream(),"utf-8"));
+		DeviceDataInfo deviceDataInfo=new DeviceDataInfo();
+		String datatime=DateUtil.getCurrentDateTime();
+		MyConstants myConstants=new MyConstants();
+		Map<String,String> params=new HashMap<>();
+		RestTemplate restTemplate=new RestTemplate();
+        StringBuffer sb = new StringBuffer("");
+        String temp;
+        while ((temp = br.readLine()) != null){
+            sb.append(temp);
+        }
+        br.close();
+        //真正接收到的数据
+        String result = sb.toString();
+		System.out.println("原始数据:"+result);
+		JSONArray json = JSONArray.fromObject("["+result+"]");
+		JSONObject job = json.getJSONObject(0); 
+		String productId=String.valueOf(job.get("productId"));
+		String deviceid=String.valueOf(job.get("deviceId"));
+		System.out.println("deviceid:"+deviceid);
+		String datainfoid = UUID.randomUUID().toString().replace("-", "");
+		deviceDataInfo.setDatainfoid(datainfoid);
+		deviceDataInfo.setDeviceid(deviceid);
+		String payload=String.valueOf(job.get("payload"));
+		System.out.println("payload:"+payload);
+		response.setStatus(200);
+		if(StringUtils.isNotBlank(payload)&&!"null".equals(payload)) {
+			JSONArray payloadjson = JSONArray.fromObject("["+payload+"]");
+			JSONObject pob = payloadjson.getJSONObject(0); 
+			String appdata=String.valueOf(pob.get("APPdata"));
+			deviceDataInfo.setHisdata(appdata);
+			Base64 base64 = new Base64();
+			BASE64Decoder decoder = new BASE64Decoder();
+			byte[] buffer=DatatypeConverter.parseBase64Binary(appdata);
+			String data3=new String(buffer, "UTF-8");
+			String buffercode=DatatypeConverter.printHexBinary(buffer);
+			deviceDataInfo.setDatacontent(buffercode);
+			String title=buffercode.substring(0, 5);
+			deviceDataInfo.setIsSend("0");
+			deviceDataInfoService.saveDeviceDataInfo(deviceDataInfo);
+			if("55AA".equals(title)) {
+				String typecode=buffercode.substring(5, 9);
+				if("0805".equals(typecode)) {
+					String netState=buffercode.substring(11, 13);//联网状态  01未联网  02已联网
+					String voltage=buffercode.substring(13, 15);//电压整数
+					String minvoltage=buffercode.substring(15, 17);//最小电压
+					String antilock=buffercode.substring(19, 21);//反锁状态  00反锁  01未反锁
+					String openstate=buffercode.substring(21, 23);//开锁状态  00未开锁  01已开锁
+				}
+			}
+		}
+		
+		return "HTTP 200";
+	}
+	
+	
+	/**
+	 * 测试
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/registTest")
+	public String registTest(String buffercode) throws Exception {
+		MyConstants myConstants=new MyConstants();
+		String url=myConstants.productsServerUrl;
+		RestTemplate restTemplate=new RestTemplate();
+		Map<String,String> params=new HashMap<>();
+		buffercode=buffercode.toUpperCase();
+		String imei=buffercode.substring(8, 23);
+		String bleuecode=buffercode.substring(24, buffercode.length()-2);
+		String bluename="";
+		for(int i=0;i<bleuecode.length()-1;i++) {
+			String code=bleuecode.substring(i, i+2);
+			String name=hexStr2Str(code);
+			if(StringUtils.isNotBlank(bluename)) {
+				bluename=bluename+name;
+			}else {
+				bluename=name;
+			}
+			i++;
+		}
+		String deviceno=getMD5Str(bluename);
+		JSONObject resultObj=addEqu(deviceno,bluename,imei);
+		String registresult=resultObj.getString("result");
+		if("1".equals(registresult)) {
+			String newdeviceId=resultObj.getString("deviceId");
+			String actionUrl=url+myConstants.registUrl+"?imei="+imei+"&bluename="+bluename+"&deviceId="+newdeviceId+"&deviceno="+deviceno;
+			ResponseEntity<String> responseEntity=restTemplate.getForEntity(actionUrl,String.class,params);
+			JSONArray jsStr = JSONArray.fromObject("["+responseEntity.getBody()+"]");
+			JSONObject obj =jsStr.getJSONObject(0);
+		}
+		return "HTTP 200";
+	}
+	
+	/**
+	 * 16进制转换成为string类型字符串
+	 * @param s
+	 * @return
+	 */
+	public static String hexStr2Str(String hex) {
+		String hexStr = "";
+		String str = "0123456789ABCDEF"; //16进制能用到的所有字符 0-15
+		for(int i=0;i<hex.length();i++){
+			String s = hex.substring(i, i+1);
+			if(s.equals("a")||s.equals("b")||s.equals("c")||s.equals("d")||s.equals("e")||s.equals("f")){
+				s=s.toUpperCase().substring(0, 1);
+			}
+			hexStr+=s;
+		}
+		
+		char[] hexs = hexStr.toCharArray();//toCharArray() 方法将字符串转换为字符数组。
+		int length = (hexStr.length() / 2);//1个byte数值 -> 两个16进制字符
+		byte[] bytes = new byte[length]; 
+		int n;
+		for (int i = 0; i < bytes.length; i++) {
+			int position = i * 2;//两个16进制字符 -> 1个byte数值
+			n = str.indexOf(hexs[position]) * 16;
+			n += str.indexOf(hexs[position + 1]);
+			// 保持二进制补码的一致性 因为byte类型字符是8bit的  而int为32bit 会自动补齐高位1  所以与上0xFF之后可以保持高位一致性 
+			//当byte要转化为int的时候，高的24位必然会补1，这样，其二进制补码其实已经不一致了，&0xff可以将高的24位置为0，低8位保持原样，这样做的目的就是为了保证二进制数据的一致性。
+			bytes[i] = (byte) (n & 0xff);
+		}
+		String name = "";
+		try {
+			name = new String(bytes,"UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return name;
+	}
+
+	
+	
+	
+	
+	/**
+	 * 设备数据接收
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/getRedSendData")
+	public String getRedSendData(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		BufferedReader br = new BufferedReader(new InputStreamReader(request.getInputStream(),"utf-8"));
+        StringBuffer sb = new StringBuffer("");
+        Base64 base64 = new Base64();
+        String data0=new String(base64.decode("GwgCAQEAAAABDQ=="), "UTF-8");
+        System.out.println("解密数据："+data0);
+        String temp;
+        while ((temp = br.readLine()) != null){
+            sb.append(temp);
+        }
+        br.close();
+        //真正接收到的数据
+        String result = sb.toString();
+		System.out.println("result:"+result);
+		JSONArray json = JSONArray.fromObject("["+result+"]");
+		JSONObject job = json.getJSONObject(0); 
+		String productId=String.valueOf(job.get("productId"));
+		String deviceid=String.valueOf(job.get("deviceid"));
+		String IMEI=String.valueOf(job.get("IMEI"));
+		String payload=String.valueOf(job.get("payload"));
+		System.out.println("payload:"+payload);
+		JSONArray payloadjson = JSONArray.fromObject("["+payload+"]");
+		JSONObject pob = payloadjson.getJSONObject(0); 
+		String appdata=String.valueOf(pob.get("APPdata"));
+		System.out.println("appdata:"+appdata);
+		
+		String data1=new String(base64.decode(appdata), "UTF-8");
+		String data=new String(base64.decode(data1), "UTF-8");
+		
+		System.out.println("data:"+data);
+		return "HTTP 200";
+	}
+	
+	
+	
+	
+
+	/**
+	 * 
+	 * @param param       api 配置参数表
+	 * @param timestamp   UNIX格式时间戳
+	 * @param application appKey,到应用管理打开应用可以找到此值
+	 * @param secret      密钥,到应用管理打开应用可以找到此值
+	 * @param body        请求body数据,如果是GET请求，此值写null
+	 * @return 签名数据
+	 */
+	public static String sign(Map<String, String> param, long timestamp, String application, String secret, byte[] body)
+			throws Exception {
+
+		// 连接系统参数
+		StringBuffer sb = new StringBuffer();
+		sb.append("application").append(":").append(application).append("\n");
+		sb.append("timestamp").append(":").append(timestamp).append("\n");
+
+		// 连接请求参数
+		if (param != null) {
+			TreeSet<String> keys = new TreeSet<String>(param.keySet());
+			Iterator<String> i = keys.iterator();
+			while (i.hasNext()) {
+				String s = i.next();
+				String val = param.get(s);
+				sb.append(s).append(":").append(val == null ? "" : val).append("\n");
+			}
+		}
+
+		// body数据写入需要签名的字符流中
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		baos.write(sb.toString().getBytes("utf-8"));
+		if (body != null && body.length > 0) {
+			baos.write(body);
+			baos.write("\n".getBytes("utf-8"));
+		}
+
+		// 得到需要签名的字符串
+		String string = baos.toString();
+		System.out.println("Sign string: " + string);
+
+		// hmac-sha1编码
+		byte[] bytes = null;
+		SecretKey secretKey = new SecretKeySpec(secret.getBytes("utf-8"), "HmacSha1");
+		Mac mac = Mac.getInstance(secretKey.getAlgorithm());
+		mac.init(secretKey);
+		bytes = mac.doFinal(string.getBytes("utf-8"));
+
+		// base64编码
+		String encryptedString = new String(Base64.encodeBase64(bytes));
+
+		// 得到需要提交的signature签名数据
+		return encryptedString;
+	}
+
+	public static long getTimeOffset() {
+		long offset = 0;
+		HttpResponse response = null;
+
+		// 构造httpGet请求
+		CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+		HttpGet httpTimeGet = new HttpGet("https://ag-api.ctwing.cn/echo");
+
+		try {
+			long start = System.currentTimeMillis();
+			response = httpClient.execute(httpTimeGet);
+			long end = System.currentTimeMillis();
+			// 时间戳在返回的响应的head的x-ag-timestamp中
+			Header[] headers = response.getHeaders("x-ag-timestamp");
+			if (headers.length > 0) {
+				long serviceTime = Long.parseLong(headers[0].getValue());
+				offset = serviceTime - (start + end) / 2L;
+			}
+			httpClient.close();
+		} catch (ClientProtocolException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return offset;
+	}
+	
+	
+	public String[] num10ToNum16(int num) {
+		int num0=(num/16777216)%256;//时长24-32位
+		String num0_16="00";
+		if(num0>0) {
+			num0_16=intToHex(num0);
+			
+		}
+		
+		int num1=(num/65536)%256;//时长16-24位
+		String num1_16="00";
+		if(num1>0) {
+			num1_16=intToHex(num1);
+		}
+		
+		int num2=(num/256)%256;//时长8-16位
+		String num2_16="00";
+		if(num2>0) {
+			num2_16=intToHex(num2);
+		}
+		
+		int num3=num%256;//时长8-16位
+		String num3_16="00";
+		if(num3>0) {
+			num3_16=intToHex(num3);
+		}
+		
+		String nums[]=new String[4];
+		nums[0]=num0_16;
+		nums[1]=num1_16;
+		nums[2]=num2_16;
+		nums[3]=num3_16;
+		return nums;
+		
+	}
+	
+	private static String intToHex(int n) {
+        StringBuffer s = new StringBuffer();
+        String a;
+        char []b = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+        while(n != 0){
+            s = s.append(b[n%16]);
+            n = n/16;            
+        }
+        a = s.reverse().toString();
+        if(a.length()==1) {
+        	a="0"+a;
+        }
+        return a;
+    }
+	
+	private String getHexNum(String nums[]) {
+		StringBuilder builder = new StringBuilder("");
+		char[] chars = "0123456789ABCDEF".toCharArray();
+		int bitnum=0;
+		for(int i=1;i<nums.length;i++) {
+			 byte[] bs = nums[i].getBytes();
+			 int bit = 0;
+			 int num16=0;
+		     for (int j = 0; j < bs.length; j++) {
+		            bit = (bs[j] & 0x0f0) >> 4;
+		            builder.append(chars[bit]);
+		            bit = bs[j] & 0x0f;
+		            num16=chars[bit];
+		            builder.append(chars[bit]);
+		            builder.append(' ');
+		      }
+		     bitnum=bitnum+num16;
+		}
+        
+       
+       
+		return String.valueOf(bitnum);
+		
+	}
+	
+	/* 十六进制转十进制 */
+	public static int covert(String content){
+        int number=0;
+        String [] HighLetter = {"A","B","C","D","E","F"};
+        Map<String,Integer> map = new HashMap<>();
+        for(int i = 0;i <= 9;i++){
+            map.put(i+"",i);
+        }
+        for(int j= 10;j<HighLetter.length+10;j++){
+            map.put(HighLetter[j-10],j);
+        }
+        String[]str = new String[content.length()];
+        for(int i = 0; i < str.length; i++){
+            str[i] = content.substring(i,i+1);
+        }
+        for(int i = 0; i < str.length; i++){
+            number += map.get(str[i])*Math.pow(16,str.length-1-i);
+        }
+        return number;
+    }
+	
+	/* 添加设备*/
+	public static JSONObject addEqu(String deviceName,String deviceSn,String imei) throws Exception{
+		String version = "20181031202117";
+		  //请求BODY,到文档中心->使能平台API文档打开要调用的api中，在“请求BODY”中查看 
+		  JSONObject resultObj=new JSONObject();
+		  String bodyString = "{\r\n"
+		  + "  \"deviceName\": \""+deviceName+"\",\r\n" + "  \"deviceSn\": \""+deviceSn+"\",\r\n"
+		  + "  \"imei\": \""+imei+"\",\r\n" +
+		  "  \"operator\": \"10513169\",\r\n" + "  \"other\": {\"autoObserver\":0,\r\n"
+		  + "            \"imsi\":\"\",\r\n" +
+		  "            \"pskValue\":\"ADvNWlkcNq9AfKnk\"},\r\n" +
+		  "  \"productId\":"+productId+"\r\n" + "}";
+		  System.out.println(bodyString);
+		  
+		 CloseableHttpClient httpClient = null; HttpResponse response = null;
+		  httpClient = HttpClientBuilder.create().build();
+		  
+		  long offset = getTimeOffset();// 获取时间偏移量，方法见前面
+		  
+		  // 构造请求的URL，具体参考文档中心->使能平台API文档中的请求地址和访问路径 
+		  URIBuilder uriBuilder = new URIBuilder(); 
+		  uriBuilder.setScheme("http");
+		  uriBuilder.setHost("ag-api.ctwing.cn/aep_device_management"); //请求地址
+		  uriBuilder.setPath("/device"); //访问路径，可以在API文档中对应API中找到此访问路径
+		  
+		  // 在请求的URL中添加参数，具体参考文档中心->API文档中请求参数说明 //
+		  //(如果有MasterKey，将MasterKey加到head中，不加在此处) 
+		  uriBuilder.addParameter("productId", productId);//如果没有其他参数，此行不要
+		  
+		  HttpPost httpPost = new HttpPost(uriBuilder.build());//构造post请求
+		  
+		  long timestamp = System.currentTimeMillis() + offset;// 获取时间戳 
+		  Date date = new Date(timestamp); 
+		  SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+		  dateFormat.setTimeZone(TimeZone.getTimeZone("GMT")); String dataString =
+		  dateFormat.format(date);// 生成格式化的日期字符串
+		  // head中添加公共参数 
+		  httpPost.addHeader("MasterKey", MasterKey);//MasterKey加在此处head中
+		  httpPost.addHeader("application", application);
+		  httpPost.addHeader("timestamp", "" + timestamp);
+		  httpPost.addHeader("version", version); 
+		  httpPost.addHeader("Content-Type",
+		  "application/json; charset=UTF-8"); 
+		  httpPost.addHeader("Date", dataString);
+		  
+		  // 下列注释的head暂时未用到 // httpPost.addHeader("sdk", "GIT: a4fb7fca"); //
+		  httpPost.addHeader("Accept", "gzip,deflate"); //
+		  httpPost.addHeader("User-Agent", "Telecom API Gateway Java SDK");
+		  
+		  // 构造签名需要的参数,如果参数中有MasterKey，则添加来参与签名计算, 
+		  //其他参数根据实际API从URL中获取,如有其他参数,写法参考get示例 
+		  Map<String, String> param = new
+		  HashMap<String, String>(); param.put("MasterKey", MasterKey);
+		 
+		  // 添加签名
+		  httpPost.addHeader("signature", sign(param, timestamp, application,secret, bodyString.getBytes()));
+		  
+		  //请求添加body部分
+		  httpPost.setEntity(new StringEntity(bodyString));
+		  
+		  try { // 发送请求 
+			  response = httpClient.execute(httpPost);
+		  
+		  // 从response获取响应结果 
+			JSONArray json = JSONArray.fromObject("["+new String(EntityUtils.toByteArray(response.getEntity()))+"]");
+			JSONObject job = json.getJSONObject(0); 
+			String code=String.valueOf(job.get("code"));
+		  if("0".equals(code)) {
+			  String result=String.valueOf(job.get("result"));
+			  JSONArray payloadjson = JSONArray.fromObject("["+result+"]");
+			  JSONObject pob = payloadjson.getJSONObject(0); 
+			  String deviceId=String.valueOf(pob.get("deviceId"));
+			  resultObj.put("result", "1");
+			  resultObj.put("deviceId", deviceId);
+		  }else {
+			  resultObj.put("result", "0");
+			  resultObj.put("deviceId", "");
+		  }
+		  httpClient.close(); 
+		  } catch (ClientProtocolException e) {
+		  e.printStackTrace(); 
+		  } catch (IOException e) {
+			  e.printStackTrace(); 
+		}
+		return  resultObj; 
+    }
+	
+	
+	
+	/* 十六进制转十进制 */
+	public static JSONObject updateEqu(String deviceId,String deviceName) throws Exception{
+		String version = "20181031202122";
+		  //请求BODY,到文档中心->使能平台API文档打开要调用的api中，在“请求BODY”中查看 
+		  JSONObject resultObj=new JSONObject();
+		  String bodyString = "{\r\n"
+		  + "  \"deviceName\": \""+deviceName+"\",\r\n" +"  \"operator\": \"10513169\",\r\n" + "  \"other\": {\"autoObserver\":0,\r\n"
+		  + "            \"imsi\":\"\",\r\n" +
+		  "            \"pskValue\":\"ADvNWlkcNq9AfKnk\"},\r\n" +
+		  "  \"productId\":"+productId+"\r\n" + "}";
+		  System.out.println(bodyString);
+		  
+		 CloseableHttpClient httpClient = null; HttpResponse response = null;
+		  httpClient = HttpClientBuilder.create().build();
+		  
+		  long offset = getTimeOffset();// 获取时间偏移量，方法见前面
+		  
+		  // 构造请求的URL，具体参考文档中心->使能平台API文档中的请求地址和访问路径 
+		  URIBuilder uriBuilder = new URIBuilder(); 
+		  uriBuilder.setScheme("http");
+		  uriBuilder.setHost("ag-api.ctwing.cn/aep_device_management"); //请求地址
+		  uriBuilder.setPath("/device"); //访问路径，可以在API文档中对应API中找到此访问路径
+		  uriBuilder.setQuery(deviceId);
+		  // 在请求的URL中添加参数，具体参考文档中心->API文档中请求参数说明 //
+		  //(如果有MasterKey，将MasterKey加到head中，不加在此处) 
+		  uriBuilder.addParameter("productId", productId);//如果没有其他参数，此行不要
+		  
+		  HttpPost httpPost = new HttpPost(uriBuilder.build());//构造post请求
+		  
+		  long timestamp = System.currentTimeMillis() + offset;// 获取时间戳 
+		  // head中添加公共参数 
+		  httpPost.addHeader("MasterKey", MasterKey);//MasterKey加在此处head中
+		  httpPost.addHeader("application", application);
+		  httpPost.addHeader("timestamp", "" + timestamp);
+		  httpPost.addHeader("version", version); 
+		  httpPost.addHeader("Content-Type",
+		  "application/json; charset=UTF-8"); 
+		  
+		  // 下列注释的head暂时未用到 // httpPost.addHeader("sdk", "GIT: a4fb7fca"); //
+		  httpPost.addHeader("Accept", "gzip,deflate"); //
+		  httpPost.addHeader("User-Agent", "Telecom API Gateway Java SDK");
+		  
+		  // 构造签名需要的参数,如果参数中有MasterKey，则添加来参与签名计算, 
+		  //其他参数根据实际API从URL中获取,如有其他参数,写法参考get示例 
+		  Map<String, String> param = new HashMap<String, String>(); 
+		  param.put("MasterKey", MasterKey);
+		  param.put("QUERY", deviceId);
+		 
+		  // 添加签名
+		  httpPost.addHeader("signature", sign(param, timestamp, application,secret, bodyString.getBytes()));
+		  
+		  //请求添加body部分
+		  httpPost.setEntity(new StringEntity(bodyString));
+		  
+		  try { // 发送请求 
+			  response = httpClient.execute(httpPost);
+		  
+		  // 从response获取响应结果 
+			JSONArray json = JSONArray.fromObject("["+new String(EntityUtils.toByteArray(response.getEntity()))+"]");
+			
+		  httpClient.close(); 
+		  } catch (ClientProtocolException e) {
+		  e.printStackTrace(); 
+		  } catch (IOException e) {
+			  e.printStackTrace(); 
+		}
+		return  resultObj; 
+    }
+	
+	
+	 public static String getMD5Str(String str) {
+		 String md5Str ="";
+		   try {  
+	            MessageDigest md = MessageDigest.getInstance("MD5");  
+	            md.update(str.getBytes());//update处理  
+	            byte [] encryContext = md.digest();//调用该方法完成计算  
+	  
+	            int i;  
+	            StringBuffer buf = new StringBuffer("");  
+	            for (int offset = 0; offset < encryContext.length; offset++) {//做相应的转化（十六进制）  
+	                i = encryContext[offset];  
+	                if (i < 0) i += 256;  
+	                if (i < 16) buf.append("0");  
+	                buf.append(Integer.toHexString(i));  
+	           }  
+	           md5Str=buf.toString().substring(8, 24);
+	        } catch (NoSuchAlgorithmException e) {  
+	            // TODO Auto-generated catch block  
+	            e.printStackTrace();  
+	        }  
+	        return md5Str;
+	    }
+	 
+		
+}

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysDtuEquipmentMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysDtuEquipment">
+    <id column="dtuEquipmentId" property="dtuEquipmentId" />
+    <result column="dtuEquipmentName" property="dtuEquipmentName" />
+    <result column="Id" property="plantId" />
+    <result column="employ" property="employ" />
+  </resultMap>
+	
+  <sql id="Base_List">
+    dtuEquipmentId, dtuEquipmentName, plantId, employ
+  </sql>
+
+   <update id="updateDtuEquipment" parameterType="com.th.system.po.SysDtuEquipment">
+      update sys_dtuEquipment
+        <set>
+            <if test="dtuEquipmentName != null">`dtuEquipmentName` = #{dtuEquipmentName},</if>
+            <if test="employ != null">`employ` = #{employ},</if>
+            <if test="plantId != null">plantId = #{plantId},</if>
+        </set>
+        where dtuEquipmentId = #{dtuEquipmentId}
+   </update>
+   
+   <select id="findByPlantId" resultMap="BaseMap">
+		select <include refid="Base_List" /> from sys_dtuEquipment
+		<where>
+			<if test="_parameter != null">
+		      plantId = #{_parameter}
+		   </if>
+		   and employ != "1"
+		</where>
+   </select>
+   
+</mapper>

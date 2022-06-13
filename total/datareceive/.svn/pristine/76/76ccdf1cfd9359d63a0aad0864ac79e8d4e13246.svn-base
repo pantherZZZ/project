@@ -1,0 +1,15 @@
+package com.yy.common.utils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class Log4jUtil {
+
+	public static Logger getLogger(Class<?> c) {
+		return LoggerFactory.getLogger(c);
+	}
+
+	public static Logger getLogger(String name) {
+		return LoggerFactory.getLogger(name);
+	}
+}

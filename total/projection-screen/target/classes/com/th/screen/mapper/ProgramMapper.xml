@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.th.screen.mapper.ProgramMapper">
+    <select id="findAll" resultType="com.th.screen.entity.Program">
+    SELECT
+    p.*
+    FROM
+    program p
+    <where>
+        p.status=0
+        and id in
+        <foreach item="item" index="index" collection="ids" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </where>
+    ORDER BY p.created_at desc,p.id
+    </select>
+</mapper>

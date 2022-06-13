@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.th.system.dao.SysDataMapper">
+  <resultMap id="BaseMap" type="com.th.system.po.SysData">
+    <id column="dataId" property="dataId" />
+    <result column="equipmentId" property="equipmentId" />
+    <result column="modelId" property="modelId" />
+    <result column="data" jdbcType="VARCHAR" property="data" />
+    <result column="specification" jdbcType="VARCHAR" property="specification" />
+    <result column="time" jdbcType="VARCHAR" property="time" />
+    <result column="hour" jdbcType="VARCHAR" property="hour" />
+  </resultMap>
+	
+  <sql id="Base_List">
+    dataId, equipmentId, modelId, data,specification,time,`hour`
+  </sql>
+	
+    <insert id="insertTextData" parameterType="java.lang.String">
+    insert into text
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+        data,
+        time,
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+        #{data},
+        #{time},
+    </trim>
+  </insert>	
+	
+	
+  <select id="findByEquipment" resultMap="BaseMap">
+		select <include refid="Base_List" />
+		from sys_data where equipmentId = #{equipmentId}
+  </select>
+  
+   <select id="findHourData" resultMap="BaseMap">
+		select <include refid="Base_List" /> from sys_data
+		where equipmentId = #{equipmentId}
+		and time like concat('%',#{time},'%')
+		and `hour` = #{hour}
+		LIMIT 0,1
+  </select>
+  
+   <select id="findDataCount" resultType="java.lang.Integer">
+		select count(dataId) from sys_data
+  </select>
+
+   <insert id="insertData" parameterType="com.th.system.po.SysData">
+    insert into sys_data
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="equipmentId != null">
+        equipmentId,
+      </if>
+       <if test="modelId != null">
+        modelId,
+      </if>
+      <if test="data != null">
+        data,
+      </if>     
+      <if test="specification != null">
+        specification,
+      </if>
+       <if test="time != null">
+        `time`,
+      </if>
+       <if test="hour != null">
+        `hour`,
+      </if>
+    </trim>
+    <trim prefix="values(" suffix=")" suffixOverrides=",">
+      <if test="equipmentId != null">
+        #{equipmentId},
+      </if> 
+      <if test="modelId != null">
+        #{modelId},
+      </if> 
+      <if test="data != null">
+        #{data},
+      </if>
+      <if test="specification != null">
+        #{specification},
+      </if>
+       <if test="time != null">
+        #{time},
+      </if>
+       <if test="hour != null">
+        #{hour},
+      </if>
+    </trim>
+  </insert>
+
+</mapper>

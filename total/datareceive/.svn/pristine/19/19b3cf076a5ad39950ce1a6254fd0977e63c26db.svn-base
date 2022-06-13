@@ -1,0 +1,131 @@
+package com.yy.data.time;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import com.yy.common.constant.MyConstants;
+import com.yy.common.utils.DateUtil;
+import com.yy.common.utils.JsonUtil;
+import com.yy.data.answer.UdpAnswer;
+import com.yy.data.udp.UdpStart;
+import com.yy.data.udp.UdpStartThread;
+import com.yy.redis.RedisConstants;
+import com.yy.redis.utils.RedisUtil;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+@Component
+public class UdpHoldCheck {
+
+	private static Logger log = Logger.getLogger(UdpHoldCheck.class);
+	public static final byte[] b = new byte[0];
+	public static SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
+	public UdpAnswer udpAnswer;
+	
+	@Autowired
+	private RedisUtil redisUtil;
+
+	@Scheduled(cron = "0/5 * * * * ? ")
+	public void sendPowerFirst() {//每5秒查询通电指令和红外关机指令
+		Set<String> openKeys=redisUtil.getAllKeys(RedisConstants.datebase0);//获取通电待发设备列表
+		Set<String> closeRedKeys=redisUtil.getAllKeys(RedisConstants.datebase2);//获取红外关机待发设备列表
+		for(String key:openKeys) {
+			String opencode=String.valueOf(redisUtil.get(RedisConstants.datebase0,key));
+			try {
+				udpAnswer.fastAllSendCode(key, opencode);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			redisUtil.del(RedisConstants.datebase0, key);
+			openKeys.remove(key);
+			redisUtil.set(RedisConstants.datebase4,key,opencode);//通电已发送
+			
+		}
+		
+		for(String key:closeRedKeys) {
+			String closeRedcode=String.valueOf(redisUtil.get(RedisConstants.datebase2,key));
+			try {
+				udpAnswer.fastAllSendCode(key, closeRedcode);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			redisUtil.del(RedisConstants.datebase2, key);
+			closeRedKeys.remove(key);
+			redisUtil.set(RedisConstants.datebase5,key,closeRedcode);//红外关机已发送
+		}
+		
+		
+	}
+	
+	
+	@Scheduled(cron = "0/15 * * * * ? ")
+	public void sendPowerSecond() {//每15秒查询通电指令和红外关机指令已发送未删除的
+		Set<String> openKeys=redisUtil.getAllKeys(RedisConstants.datebase4);//获取通电已发设备列表
+		Set<String> closeRedKeys=redisUtil.getAllKeys(RedisConstants.datebase5);//获取红外关机已发设备列表
+		for(String key:openKeys) {
+			String opencode=String.valueOf(redisUtil.get(RedisConstants.datebase4,key));
+			try {
+				udpAnswer.fastAllSendCode(key, opencode);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			redisUtil.del(RedisConstants.datebase4, key);
+			openKeys.remove(key);
+		}
+		
+		for(String key:closeRedKeys) {
+			String closeRedcode=String.valueOf(redisUtil.get(RedisConstants.datebase5,key));
+			try {
+				udpAnswer.fastAllSendCode(key, closeRedcode);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			redisUtil.del(RedisConstants.datebase5, key);
+			closeRedKeys.remove(key);
+		}
+		
+	}
+	
+	@Scheduled(cron = "0/45 * * * * ? ")
+	public void sendPowerCloseFirst() {//每45秒查询一下缓存中待发送的断电指令
+		System.out.println("断电开始了！");
+		Set<String> closeKeys=redisUtil.getAllKeys(RedisConstants.datebase3);//获取断电已发设备列表
+		for(String key:closeKeys) {
+			String closecode=String.valueOf(redisUtil.get(RedisConstants.datebase3,key));
+			try {
+				udpAnswer.fastAllSendCode(key, closecode);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			redisUtil.del(RedisConstants.datebase3, key);
+			closeKeys.remove(key);
+			redisUtil.set(RedisConstants.datebase6,key,closecode);//断电已发送
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+
+}

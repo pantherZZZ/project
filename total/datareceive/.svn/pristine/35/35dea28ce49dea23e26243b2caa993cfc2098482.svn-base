@@ -1,0 +1,1465 @@
+package com.yy.data.udp;
+
+import java.io.UnsupportedEncodingException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.lang.CharEncoding;
+
+import com.yy.common.constant.MyConstants;
+import com.yy.common.utils.Base64UploadClass;
+import com.yy.common.utils.CRC16;
+import com.yy.common.utils.Convert;
+import com.yy.common.utils.DateUtil;
+import com.yy.common.utils.FileOperateUtil;
+import com.yy.common.utils.HttpUtil;
+import com.yy.common.utils.JedisUtils;
+import com.yy.common.utils.Log4jUtil;
+import com.yy.common.utils.StringUtils;
+
+/**
+ * 
+ * @author Administrator
+ * 
+ */
+public class MessageData implements MessageDataInterface {
+
+	@Override
+	public Map<String, Object> reveive(byte[] message) {
+		String needAnalysis = needAnalysis(message);
+		if (needAnalysis != null) {
+			if (needAnalysis.equals("1")) {
+				return analysis_equState(message);
+			} else if (needAnalysis.equals("2")) {
+				return analysis_equConnect(message);
+			} else if (needAnalysis.equals("3")) {
+				return analysis_equRemoteWait(message);
+			} else if (needAnalysis.equals("4")) {
+				return analysis_poweron(message);
+			} else if (needAnalysis.equals("7")) {
+				return analysis_fixcheck(message);
+			} else if (needAnalysis.equals("91")) {// 仅供烟感水浸
+				return analysis_otheralarm(message);
+			} else if (needAnalysis.equals("88")) {// nb远程升级，正式的
+				return analysis_nb_remoteUpdate(message);
+			} else if (needAnalysis.equals("61")) {// 图片传输-自定义协议
+				return analysis_photo_61(message);
+			} else if (needAnalysis.equals("62")) {// 图片传输-自定义协议
+				return analysis_photo_62(message);
+			}
+		}
+		return null;
+	}
+
+	public static String getHexString(byte[] message, int size) {
+		StringBuffer hex_message = new StringBuffer();
+
+		for (int j = 0; j < message.length; ++j) {
+			if (j == size)
+				break;
+			String a = Integer.toHexString(message[j] & 0xff);
+			if (a.length() == 1) {
+				a = "0" + a;
+			}
+			hex_message.append(a);
+		}
+		if (hex_message.toString().length() > 50) {
+			hex_message = new StringBuffer();
+		}
+		return hex_message.toString();
+	}
+
+	public static String getSizeHexString(byte[] message, int size) {
+		StringBuffer hex_message = new StringBuffer();
+
+		for (int j = 0; j < message.length; ++j) {
+			if (j == size)
+				break;
+			String a = Integer.toHexString(message[j] & 0xff);
+			if (a.length() == 1) {
+				a = "0" + a;
+			}
+			hex_message.append(a);
+		}
+		if (hex_message.toString().length() > size * 2) {
+			hex_message = new StringBuffer();
+		}
+		return hex_message.toString();
+	}
+
+	// 心跳信号 13字节--第一次上电也走心跳包
+	private Map<String, Object> analysis_equConnect(byte[] message) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		String result = "0";
+		int size = 13;
+		if (message.length > 1) {
+			int i = 0;
+			byte message_type = message[i++]; // 消息类型
+			byte equ_id_1 = message[i++];//
+			byte equ_id_2 = message[i++];
+			byte equ_id_3 = message[i++];
+			byte equ_id_4 = message[i++];
+			byte equ_state = message[i++];
+			byte equ_chargeCent_1 = message[i++];
+			byte equ_chargeCent_2 = message[i++];
+			byte equ_temperature_1 = message[i++];
+			byte equ_temperature_2 = message[i++];
+			byte equ_humidity = message[i++];// 相对湿度
+			byte signal_1 = message[i++];// 信号强度
+			byte signal_2 = message[i++];// 信号强度
+			// 新加的字段
+			byte rtc_1 = 0;
+			byte rtc_2 = 0;
+			byte rtc_3 = 0;
+			byte rtc_4 = 0;
+			byte rtc_5 = 0;
+			byte rtc_6 = 0;
+			byte equstate2 = 0;
+			byte[] iccid_bytes = new byte[20];
+			byte chn_1 = 0;
+			byte chn_2 = 0;
+			byte cellphy_1 = 0;
+			byte cellphy_2 = 0;
+			byte cell_1 = 0;
+			byte cell_2 = 0;
+			byte rsrp_1 = 0;
+			byte rsrp_2 = 0;
+			byte rsrq_1 = 0;
+			byte rsrq_2 = 0;
+			byte rssi_1 = 0;
+			byte rssi_2 = 0;
+			byte snr_1 = 0;
+			byte snr_2 = 0;
+			byte ver = 0;
+			byte[] imsi_bytes = new byte[15];
+			byte openlocktims_1 = 0;// 开锁总次数
+			byte openlocktims_2 = 0;
+			byte t3324_1 = 0;// Tau定时器
+			byte t3324_2 = 0;
+			byte t3324_3 = 0;
+			byte t3324_4 = 0;
+			byte t3412_1 = 0;// Tau定时器
+			byte t3412_2 = 0;
+			byte t3412_3 = 0;
+			byte t3412_4 = 0;
+
+			try {
+
+				rtc_1 = message[i++];
+				rtc_2 = message[i++];
+				rtc_3 = message[i++];
+				rtc_4 = message[i++];
+				rtc_5 = message[i++];
+				rtc_6 = message[i++];
+				equstate2 = message[i++];
+				for (int b = 0; b < iccid_bytes.length; b++) {
+					iccid_bytes[b] = message[i++];
+				}
+				chn_1 = message[i++];
+				chn_2 = message[i++];
+				cellphy_1 = message[i++];
+				cellphy_2 = message[i++];
+				cell_1 = message[i++];
+				cell_2 = message[i++];
+				rsrp_1 = message[i++];
+				rsrp_2 = message[i++];
+				rsrq_1 = message[i++];
+				rsrq_2 = message[i++];
+				rssi_1 = message[i++];
+				rssi_2 = message[i++];
+				snr_1 = message[i++];
+				snr_2 = message[i++];
+				ver = message[i++];
+				for (int b = 0; b < imsi_bytes.length; b++) {
+					imsi_bytes[b] = message[i++];
+				}
+				openlocktims_1 = message[i++];
+				openlocktims_2 = message[i++];
+				t3324_1 = message[i++];
+				t3324_2 = message[i++];
+				t3324_3 = message[i++];
+				t3324_4 = message[i++];
+				t3412_1 = message[i++];
+				t3412_2 = message[i++];
+				t3412_3 = message[i++];
+				t3412_4 = message[i++];
+				size += 59;
+				size += 8;// Tau定时器2个共8个字节
+			} catch (Exception e) {
+				// System.out.println("analysis_equConnect解析报文出错索引：" + i);
+			}
+			map.put("type", "51");
+			int equid = Convert.bytesToInt(new byte[] { equ_id_1, equ_id_2, equ_id_3, equ_id_4 });
+			map.put("equid", "" + equid);
+			if (equ_chargeCent_2 <= 0) {
+				equ_chargeCent_2 = 65;
+			}
+			// equ_chargeCent_2判断补零
+			String equ_chargeCent_2_full = StringUtils.addZeroForNum(equ_chargeCent_2, 2);
+			String equ_chargeCent = equ_chargeCent_1 + "." + equ_chargeCent_2_full;
+			map.put("charge", equ_chargeCent);
+			String equ_temperature = equ_temperature_1 + "." + equ_temperature_2;
+			map.put("temperature", equ_temperature);
+			map.put("humidity", equ_humidity);
+			short signal = Convert.bytesToShort(new byte[] { signal_1, signal_2 });
+			map.put("signal", signal + "");
+			short openlocktims = Convert.bytesToShort(new byte[] { openlocktims_2, openlocktims_1 });// 低位在前
+			map.put("opensum", openlocktims + "");
+			int t3324 = Convert.bytesToInt(new byte[] { t3324_4, t3324_3, t3324_2, t3324_1 });// 低位在前
+			map.put("t3324", t3324 + "");
+			int t3412 = Convert.bytesToInt(new byte[] { t3412_4, t3412_3, t3412_2, t3412_1 });// 低位在前
+			map.put("t3412", t3412 + "");
+			// 新加的
+			short chn = Convert.bytesToShort(new byte[] { chn_1, chn_2 });
+			map.put("chn", chn + "");
+			short cellphy = Convert.bytesToShort(new byte[] { cellphy_1, cellphy_2 });
+			map.put("cellphyid", cellphy + "");
+			short cell = Convert.bytesToShort(new byte[] { cell_1, cell_2 });
+			map.put("cellid", cell + "");
+			short rsrp = Convert.bytesToShort(new byte[] { rsrp_1, rsrp_2 });
+			map.put("rsrp", rsrp + "");
+			short snr = Convert.bytesToShort(new byte[] { snr_1, snr_2 });
+			map.put("snr", snr + "");
+			map.put("version", ver + "");
+			// 解析ver，判断受否需要升级
+			System.out.println(equid + "版本号" + ver);
+			System.out.println(equid + "缓存中版本号" + JedisUtils.get(MyConstants.redis_equver + equid));
+			if (JedisUtils.get(MyConstants.redis_equver + equid) != null) {
+				if (!JedisUtils.get(MyConstants.redis_equver + equid).equals(ver + "")) {
+					JedisUtils.del(MyConstants.redis_equupdates + equid);
+					System.out.println(equid + "清除升级缓存");
+				}
+			}
+			JedisUtils.set(MyConstants.redis_equver + equid, ver + "", MyConstants.nbUpdate_cacheSeconds);
+			map.put("equstate2", equstate2 + "");
+			String iccid = Convert.bytesToString(iccid_bytes);
+			map.put("iccid", iccid + "");
+			System.out.println(equid + "==iccid:" + iccid);
+			String imsi = Convert.bytesToString(imsi_bytes);
+			map.put("imsi", imsi + "");
+			System.out.println(equid + "==imsi:" + imsi);
+			if (rtc_1 != 0) {
+				// yyyy-MM-dd HH:mm:ss
+				String nb_time = "20" + rtc_1 + "-" + add0_before(rtc_2 + "", 2) + "-" + add0_before(rtc_3 + "", 2)
+						+ " " + add0_before(rtc_4 + "", 2) + ":" + add0_before(rtc_5 + "", 2) + ":"
+						+ add0_before(rtc_6 + "", 2);
+				map.put("nb_time", nb_time);
+			}
+			if ((equ_state & 0xff) == MyConstants._1_equState_open) {
+				map.put("state", "开_锁开");
+			} else if ((equ_state & 0xff) == MyConstants._1_equState_close) {
+				map.put("state", "关_锁开");
+			} else if ((equ_state & 0xff) == MyConstants._1_equState_open_lock) {
+				map.put("state", "开_锁关");
+			} else if ((equ_state & 0xff) == MyConstants._1_equState_close_lock) {
+				map.put("state", "关_锁关");
+			}
+			if (equstate2 != 0) {
+				if ((equstate2 & 0xff) == MyConstants._1_equState_open) {
+					map.put("state2", "开_锁开");
+				} else if ((equstate2 & 0xff) == MyConstants._1_equState_close) {
+					map.put("state2", "关_锁开");
+				} else if ((equstate2 & 0xff) == MyConstants._1_equState_open_lock) {
+					map.put("state2", "开_锁关");
+				} else if ((equstate2 & 0xff) == MyConstants._1_equState_close_lock) {
+					map.put("state2", "关_锁关");
+				}
+			}
+
+			result = "1";
+			StringBuffer messageInfo = new StringBuffer();
+			messageInfo.append("主心跳包-设备ID为").append(equid).append("-状态为").append(map.get("state")).append("-电压为")
+					.append(equ_chargeCent);
+			map.put("messageInfo", messageInfo.toString());
+			// 报文
+			StringBuffer hex_message = new StringBuffer();
+
+			for (int j = 0; j < message.length; ++j) {
+				if (j == size)
+					break;
+				String a = Integer.toHexString(message[j] & 0xff);
+				if (a.length() == 1) {
+					a = "0" + a;
+				}
+				hex_message.append(a);
+			}
+			if (hex_message.toString().length() > 50) {
+				// hex_message = new StringBuffer();
+				map.put("hex_message", hex_message.toString().substring(0, size * 2));
+			} else {
+				map.put("hex_message", hex_message.toString());
+
+			}
+			map.put("hex_message", hex_message.toString());
+
+			// 应答 需要判断发送维护指令还是简单ACK
+			if (JedisUtils.exists(MyConstants.redis_equsets + equid)) {
+				Map<String, String> map_set = JedisUtils.getMap(MyConstants.redis_equsets + equid);
+				// 应答
+				byte[] answers = new byte[11];
+				answers[0] = MyConstants._1_equConnect_reponse_fix;
+				String ip = map_set.get("1");
+				String port = map_set.get("2");
+				String connecttime = map_set.get("3");
+				if (ip == null) {
+					answers[1] = 0;
+					answers[4] = 0;
+					answers[5] = 0;
+					answers[6] = 0;
+					answers[7] = 0;
+				} else {
+					String[] ips = ip.split(",");
+					answers[1] = (byte) 0xC1;
+					answers[4] = (byte) Integer.parseInt(ips[0]);
+					answers[5] = (byte) Integer.parseInt(ips[1]);
+					answers[6] = (byte) Integer.parseInt(ips[2]);
+					answers[7] = (byte) Integer.parseInt(ips[3]);
+				}
+				if (port == null) {
+					answers[2] = 0;
+					answers[8] = 0;
+					answers[9] = 0;
+				} else {
+					answers[2] = (byte) 0xC2;
+					byte[] port_b = Convert.shortToBytesHH(Short.parseShort(port));
+					answers[8] = (byte) port_b[0];
+					answers[9] = (byte) port_b[1];
+				}
+				if (connecttime == null) {
+					answers[3] = 0;
+					answers[10] = 0;
+				} else {
+					answers[3] = (byte) 0xC3;
+					answers[10] = (byte) Integer.parseInt(connecttime);
+				}
+				// 心跳要去判断是否为报警周期 暂时屏蔽
+				map.put("answer", answers);
+				String hex_message_answer = getHexString(answers, answers.length);
+				map.put("hex_message_answer", hex_message_answer);
+				// 删除设置缓存
+				// JedisUtils.del(MyConstants.redis_equsets + equid);
+			} else if (JedisUtils.exists(MyConstants.redis_equupdates + equid)) {//
+				Map<String, String> u_map = JedisUtils.getMap(MyConstants.redis_equupdates + equid);
+				// 发送升级请求
+				byte[] answers = new byte[40];
+				i = 0;
+				answers[i++] = MyConstants.nb_update_cmd;// 消息类型7E
+				answers[i++] = 0;// 协议版本号
+				answers[i++] = 0;
+				answers[i++] = 0;// 报文系列号
+				answers[i++] = 0;
+				answers[i++] = equ_id_1;// 地址信息
+				answers[i++] = equ_id_2;
+				answers[i++] = equ_id_3;
+				answers[i++] = equ_id_4;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0x44; // 应用码
+				answers[i++] = 0x12;
+				answers[i++] = 0;// 帧类型
+				answers[i++] = 0;// 数据上报时间
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = MyConstants.update_flag01;// 准备升级
+				String update_info = JedisUtils.get(MyConstants.redis_nbUpdate_info + u_map.get("id"));
+				if (update_info == null) {// 如果后台取消升级时
+					answers = new byte[2];
+					answers[0] = MyConstants._1_equConnect_reponse;
+					answers[1] = equ_state;
+					JedisUtils.del(MyConstants.redis_equupdates + equid);// 即刻删除升级
+				} else {
+					String[] update_infos = update_info.split(MyConstants.string_split);
+					// 数据包数量+厂家编号+型号+升级版本号
+					String packno = update_infos[0];// 升级包的分包数量
+					String changjia = update_infos[1];
+					String model = update_infos[2];
+					String verno = update_infos[3];
+					Log4jUtil.getLogger("messageData").info("准备升级，升级包分包数量为" + packno + ",版本号为" + verno);
+					byte[] pachno_short = Convert.shortToBytesHH(Short.parseShort(packno));
+					byte[] changjia_int = Convert.intToBytesHH(Integer.parseInt(changjia));
+					byte[] modelo_short = Convert.shortToBytesHH(Short.parseShort(model));
+					byte[] verno_short = Convert.shortToBytesHH(Short.parseShort(verno));
+					answers[i++] = pachno_short[0];
+					answers[i++] = pachno_short[1];
+					answers[i++] = changjia_int[0];
+					answers[i++] = changjia_int[1];
+					answers[i++] = changjia_int[2];
+					answers[i++] = changjia_int[3];
+					answers[i++] = modelo_short[0];
+					answers[i++] = modelo_short[1];
+					answers[i++] = verno_short[0];
+					answers[i++] = verno_short[1];
+					// 校验位
+					byte[] crc = CRC16.getCRC16(answers, 1, 36);
+					answers[i++] = crc[1];
+					answers[i++] = crc[0];
+					Log4jUtil.getLogger("sendUpdateCmd").info("CRC16结果：" + crc[1] + "==" + crc[0]);
+					answers[i++] = MyConstants.nb_update_cmd;// 帧尾
+					map.put("answer", answers);
+					String hex_message_answer = getSizeHexString(answers, answers.length);
+					map.put("hex_message_answer", hex_message_answer);
+					// 删除升级缓存,先屏蔽,心跳版本变化时清除
+					// JedisUtils.del(MyConstants.redis_equupdates + equid);
+				}
+
+			} else {
+				// 应答
+				byte[] answers = new byte[6];
+				boolean remoteopen_answer = false;
+
+				if (JedisUtils.get(MyConstants.redis_remoteequ + (equid + "")) != null) {
+					answers[0] = MyConstants._1_equState_reponse;
+					answers[1] = 1;// 开锁
+					answers[2] = equ_id_1;
+					answers[3] = equ_id_2;
+					answers[4] = equ_id_3;
+					answers[5] = equ_id_4;
+					remoteopen_answer = true;
+
+					// JedisUtils.del(MyConstants.redis_remoteequ + equid);//
+					// 删除缓存，现在黑卡不进psm模式,先不删除缓存
+
+				} else {
+					answers = new byte[2];
+					answers[0] = MyConstants._1_equConnect_reponse;
+					answers[1] = equ_state;
+					// map.put("answer", answers);
+					// String hex_message_answer = getHexString(answers,
+					// answers.length);
+					// map.put("hex_message_answer", hex_message_answer);
+				}
+				map.put("answer", answers);
+				String hex_message_answer = getHexString(answers, answers.length);
+				map.put("hex_message_answer", hex_message_answer);
+				if (remoteopen_answer) {
+					System.out
+							.println("在51回包中发送远程开锁指令========2101=========设备id为" + equid + ",命令为" + hex_message_answer);
+				}
+			}
+		}
+		map.put("result", result);
+		return map;
+
+	}
+
+	// 远程心跳 5字节--远程开锁
+	private Map<String, Object> analysis_equRemoteWait(byte[] message) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		String result = "0";
+		int size = 5;
+		if (message.length > 1) {
+			int i = 0;
+			byte message_type = message[i++]; // 消息类型
+			byte equ_id_1 = message[i++];//
+			byte equ_id_2 = message[i++];
+			byte equ_id_3 = message[i++];
+			byte equ_id_4 = message[i++];
+			map.put("type", "71");
+			int equid = Convert.bytesToInt(new byte[] { equ_id_1, equ_id_2, equ_id_3, equ_id_4 });
+			// 用于开锁的交互，下面有个2100回复包4秒的延迟，所以要在此缓存通讯状态
+			if (JedisUtils.get(MyConstants.redis_remoting + equid) == null) {
+				JedisUtils.set(MyConstants.redis_remoting + equid, "0", MyConstants.redis_remoting_cacheSeconds);
+			} else {
+				JedisUtils.expire(MyConstants.redis_remoting + equid, MyConstants.redis_remoting_cacheSeconds);
+			}
+			map.put("equid", "" + equid);
+			result = "1";
+			StringBuffer messageInfo = new StringBuffer();
+			messageInfo.append("远程等待包-设备ID为").append(equid);
+			map.put("messageInfo", messageInfo.toString());
+			// 报文
+			StringBuffer hex_message = new StringBuffer();
+
+			for (int j = 0; j < message.length; ++j) {
+				if (j == size)
+					break;
+				String a = Integer.toHexString(message[j] & 0xff);
+				if (a.length() == 1) {
+					a = "0" + a;
+				}
+				hex_message.append(a);
+			}
+			if (hex_message.toString().length() > 50) {
+				hex_message = new StringBuffer();
+			}
+			map.put("hex_message", hex_message.toString());
+			// 应答
+			byte[] answers = new byte[6];
+			answers[0] = MyConstants._1_equState_reponse;
+			System.out.println("远程等待包-设备ID为");
+			boolean remoteopen_answer = false;
+			if (JedisUtils.get(MyConstants.redis_remoteequ + (equid + "")) != null) {
+				answers[1] = 1;// 开锁
+				// JedisUtils.del(MyConstants.redis_remoteequ + equid);// 删除缓存，现在黑卡不进psm模式
+				remoteopen_answer = true;
+			} else {
+
+				try {
+					Thread.sleep(4000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				answers[1] = 0;
+
+			}
+			answers[2] = equ_id_1;
+			answers[3] = equ_id_2;
+			answers[4] = equ_id_3;
+			answers[5] = equ_id_4;
+
+			map.put("answer", answers);
+			// map.put("answer3times", "0");// 0为不发3次，1为发3次
+			String hex_message_answer = getHexString(answers, answers.length);
+			map.put("hex_message_answer", hex_message_answer);
+			if (remoteopen_answer) {
+				System.out.println("在71回包发送远程开锁指令========2101=========设备id为" + equid + ",命令为" + hex_message_answer);
+				Log4jUtil.getLogger("")
+						.info("在71回包发送远程开锁指令========2101=========设备id为" + equid + ",命令为" + hex_message_answer);
+			}
+		}
+		// map.put("nosubmit", "1");
+		map.put("result", result);
+		return map;
+	}
+
+	private Integer getFixOrder(String settype_s) {
+		Integer settype = Integer.parseInt(settype_s);
+		Integer settype_byte = 0;
+		switch (settype) {
+
+		case 1:
+			settype_byte = MyConstants.setnb_ip;
+			break;
+		case 2:
+			settype_byte = MyConstants.setnb_port;
+			break;
+		case 3:
+			settype_byte = MyConstants.setnb_connect;
+			break;
+		case 4:
+			settype_byte = MyConstants.setnb_password;
+			break;
+		default:
+			break;
+		}
+		return settype_byte;
+	}
+
+	// 主动回报 13字节
+	private Map<String, Object> analysis_equState(byte[] message) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		String result = "0";
+		int size = 13;
+		if (message.length > 1) {
+			int i = 0;
+			byte message_type = message[i++];
+			byte equ_id_1 = message[i++];
+			byte equ_id_2 = message[i++];
+			byte equ_id_3 = message[i++];
+			byte equ_id_4 = message[i++];
+			byte equ_state = message[i++];
+			byte equ_chargeCent_1 = message[i++];
+			byte equ_chargeCent_2 = message[i++];
+			// 新加的字段
+			byte equ_temperature_1 = message[i++];
+			byte equ_temperature_2 = message[i++];
+			byte equ_humidity = message[i++];// 相对湿度
+			byte signal_1 = message[i++];// 信号强度
+			byte signal_2 = message[i++];//
+			byte rtc_1 = 0;
+			byte rtc_2 = 0;
+			byte rtc_3 = 0;
+			byte rtc_4 = 0;
+			byte rtc_5 = 0;
+			byte rtc_6 = 0;
+			byte usercode_1 = 0;
+			byte usercode_2 = 0;
+			byte usercode_3 = 0;
+			byte usercode_4 = 0;
+			byte msgid_1 = 0;
+			byte msgid_2 = 0;
+			try {// 兼容老版本
+				rtc_1 = message[i++];
+				rtc_2 = message[i++];
+				rtc_3 = message[i++];
+				rtc_4 = message[i++];
+				rtc_5 = message[i++];
+				rtc_6 = message[i++];
+				usercode_1 = message[i++];
+				usercode_2 = message[i++];
+				usercode_3 = message[i++];
+				usercode_4 = message[i++];
+				msgid_1 = message[i++];
+				msgid_2 = message[i++];
+				size += 12;
+			} catch (Exception e) {
+
+			}
+			int equid = Convert.bytesToInt(new byte[] { equ_id_1, equ_id_2, equ_id_3, equ_id_4 });
+			map.put("equid", "" + equid);
+			int usercode = Convert.bytesToInt(new byte[] { usercode_1, usercode_2, usercode_3, usercode_4 });
+			map.put("usercode", "" + usercode);
+			short msgid = Convert.bytesToShort(new byte[] { msgid_2, msgid_1 });// nb总条数，低位在前
+			// 判断msgid这条记录是否已经同步到了平台服务
+			if (msgid != 0) {
+				// 判断是否已经解析了该条消息
+				if (JedisUtils.exists(MyConstants.redis_equmsgid + equid + msgid)) {
+					Map<String, Object> m = new HashMap<String, Object>();
+					m.put("ignore", "1");
+					return m;
+				} else {
+					JedisUtils.set(MyConstants.redis_equmsgid + equid + msgid, DateUtil.getCurrentDateTime(),
+							MyConstants.equmsgid_cacheSeconds);
+					// map.put("msgid", "" + msgid);//这个由上面的ignore解决了
+				}
+
+			}
+			map.put("type", "41");
+			if (rtc_1 != 0) {
+				// yyyy-MM-dd HH:mm:ss
+				String nb_time = "20" + rtc_1 + "-" + add0_before(rtc_2 + "", 2) + "-" + add0_before(rtc_3 + "", 2)
+						+ " " + add0_before(rtc_4 + "", 2) + ":" + add0_before(rtc_5 + "", 2) + ":"
+						+ add0_before(rtc_6 + "", 2);
+				map.put("nb_time", nb_time);
+			}
+			if ((equ_state & 0xff) == MyConstants._1_equState_open) {
+				map.put("state", "开_锁开");
+			} else if ((equ_state & 0xff) == MyConstants._1_equState_close) {
+				map.put("state", "关_锁开");
+			} else if ((equ_state & 0xff) == MyConstants._1_equState_open_lock) {
+				map.put("state", "开_锁关");
+			} else if ((equ_state & 0xff) == MyConstants._1_equState_close_lock) {
+				map.put("state", "关_锁关");
+			}
+			if (equ_chargeCent_2 <= 0) {
+				equ_chargeCent_2 = 65;
+			}
+			// equ_chargeCent_2判断补零
+			String equ_chargeCent_2_full = StringUtils.addZeroForNum(equ_chargeCent_2, 2);
+			String equ_chargeCent = equ_chargeCent_1 + "." + equ_chargeCent_2_full;
+			map.put("charge", equ_chargeCent);
+			String equ_temperature = equ_temperature_1 + "." + equ_temperature_2;
+			map.put("temperature", equ_temperature);
+			map.put("humidity", equ_humidity);
+			short signal = Convert.bytesToShort(new byte[] { signal_1, signal_2 });
+			map.put("signal", signal + "");
+			result = "1";
+			StringBuffer messageInfo = new StringBuffer();
+			messageInfo.append("主动回报-设备ID为").append(equid).append("-状态为").append(map.get("state")).append("-电压为")
+					.append(equ_chargeCent).append("-用户码为").append(usercode);
+			map.put("messageInfo", messageInfo.toString());
+			// 报文
+			StringBuffer hex_message = new StringBuffer();
+
+			for (int j = 0; j < message.length; ++j) {
+				if (j == size)
+					break;
+				String a = Integer.toHexString(message[j] & 0xff);
+				if (a.length() == 1) {
+					a = "0" + a;
+				}
+				hex_message.append(a);
+			}
+			if (hex_message.toString().length() > 50) {
+				map.put("hex_message", hex_message.toString().substring(0, size * 2));
+			} else {
+				map.put("hex_message", hex_message.toString());
+
+			}
+			map.put("hex_message", hex_message.toString());
+			// 应答,这个没有更改上报时间功能，先应答
+			byte[] answers = new byte[2];
+			answers[0] = MyConstants._1_equState_reponse;
+			answers[1] = equ_state;
+			// answers[2] = 0x0;
+			map.put("answer", answers);
+			String hex_message_answer = getHexString(answers, answers.length);
+			map.put("hex_message_answer", hex_message_answer);
+		}
+		map.put("result", result);
+		return map;
+
+	}
+
+	// 上电 10字节 合并到51了
+	public Map<String, Object> analysis_poweron(byte[] message) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		String result = "0";
+		int size = 10;
+		if (message.length > 1) {
+			int i = 0;
+			byte message_type = message[i++]; // 消息类型
+			byte equ_id_1 = message[i++];//
+			byte equ_id_2 = message[i++];
+			byte equ_id_3 = message[i++];
+			byte equ_id_4 = message[i++];
+			byte equ_state = message[i++];
+			byte equ_voltage_1 = message[i++];
+			byte equ_voltage_2 = message[i++];
+			byte version = message[i++];// 软件版本
+			byte equ_signal = message[i++];// 信号强度
+			int equid = Convert.bytesToInt(new byte[] { equ_id_1, equ_id_2, equ_id_3, equ_id_4 });
+			if (equ_voltage_2 <= 0) {
+				equ_voltage_2 = 65;
+			}
+			map.put("type", "81");
+			// equ_chargeCent_2判断补零
+			String equ_chargeCent_2_full = StringUtils.addZeroForNum(equ_voltage_2, 2);
+			String voltage = equ_voltage_1 + "." + equ_chargeCent_2_full;
+			map.put("equid", "" + equid);
+			map.put("charge", voltage + "");
+			map.put("signal", equ_signal + "");
+			if ((equ_state & 0xff) == MyConstants._1_equState_open) {
+				map.put("state", "开_锁开");
+			} else if ((equ_state & 0xff) == MyConstants._1_equState_close) {
+				map.put("state", "关_锁开");
+			} else if ((equ_state & 0xff) == MyConstants._1_equState_open_lock) {
+				map.put("state", "开_锁关");
+			} else if ((equ_state & 0xff) == MyConstants._1_equState_close_lock) {
+				map.put("state", "关_锁关");
+			}
+			result = "1";
+			StringBuffer messageInfo = new StringBuffer();
+			messageInfo.append("上报上电信号-设备ID为").append(equid).append("-电压为").append(voltage).append("-软件版本为")
+					.append(version);
+			map.put("messageInfo", messageInfo.toString());
+			// 报文
+			StringBuffer hex_message = new StringBuffer();
+
+			for (int j = 0; j < message.length; ++j) {
+				if (j == size)
+					break;
+				String a = Integer.toHexString(message[j] & 0xff);
+				if (a.length() == 1) {
+					a = "0" + a;
+				}
+				hex_message.append(a);
+			}
+			if (hex_message.toString().length() > 50) {
+				// hex_message = new StringBuffer();
+				map.put("hex_message", hex_message.toString().substring(0, 30));// 显示前30个
+			} else {
+				map.put("hex_message", hex_message.toString());
+
+			}
+
+			// 应答
+
+			// 应答 需要判断发送维护指令还是简单ACK
+			if (JedisUtils.exists(MyConstants.redis_equsets + equid)) {
+				Map<String, String> map_set = JedisUtils.getMap(MyConstants.redis_equsets + equid);
+				byte[] answers = new byte[11];
+				answers[0] = MyConstants._1_equConnect_reponse_fix;
+				String ip = map_set.get("1");
+				String port = map_set.get("2");
+				String connecttime = map_set.get("3");
+				if (ip == null) {
+					answers[1] = 0;
+					answers[4] = 0;
+					answers[5] = 0;
+					answers[6] = 0;
+					answers[7] = 0;
+				} else {
+					String[] ips = ip.split(",");
+					answers[1] = (byte) 0xC1;
+					answers[4] = (byte) Integer.parseInt(ips[0]);
+					answers[5] = (byte) Integer.parseInt(ips[1]);
+					answers[6] = (byte) Integer.parseInt(ips[2]);
+					answers[7] = (byte) Integer.parseInt(ips[3]);
+				}
+				if (port == null) {
+					answers[2] = 0;
+					answers[8] = 0;
+					answers[9] = 0;
+				} else {
+					answers[2] = (byte) 0xC2;
+					byte[] port_b = Convert.shortToBytesHH(Short.parseShort(port));
+					answers[8] = (byte) port_b[0];
+					answers[9] = (byte) port_b[1];
+				}
+				if (connecttime == null) {
+					answers[3] = 0;
+					answers[10] = 0;
+				} else {
+					answers[3] = (byte) 0xC3;
+					answers[10] = (byte) Integer.parseInt(connecttime);
+				}
+				// 心跳要去判断是否为报警周期 暂时屏蔽
+				map.put("answer", answers);
+				String hex_message_answer = getHexString(answers, answers.length);
+				map.put("hex_message_answer", hex_message_answer);
+				// 删除设置缓存，52命令中删除
+				// JedisUtils.del(MyConstants.redis_equsets + equid);
+			} else if (JedisUtils.exists(MyConstants.redis_equupdates + equid)) {//
+				Map<String, String> u_map = JedisUtils.getMap(MyConstants.redis_equupdates + equid);
+				// 发送升级请求
+				byte[] answers = new byte[40];
+				i = 0;
+				answers[i++] = MyConstants.nb_update_cmd;// 消息类型7E
+				answers[i++] = 0;// 协议版本号
+				answers[i++] = 0;
+				answers[i++] = 0;// 报文系列号
+				answers[i++] = 0;
+				answers[i++] = equ_id_1;// 地址信息
+				answers[i++] = equ_id_2;
+				answers[i++] = equ_id_3;
+				answers[i++] = equ_id_4;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0x44; // 应用码
+				answers[i++] = 0x12;
+				answers[i++] = 0;// 帧类型
+				answers[i++] = 0;// 数据上报时间
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = 0;
+				answers[i++] = MyConstants.update_flag01;// 准备升级
+				String update_info = JedisUtils.get(MyConstants.redis_nbUpdate_info + u_map.get("id"));
+				if (update_info == null) {// 如果后台取消升级时
+					answers = new byte[2];
+					answers[0] = MyConstants._1_equConnect_reponse;
+					answers[1] = equ_state;
+					JedisUtils.del(MyConstants.redis_equupdates + equid);// 即刻删除升级
+				} else {
+					String[] update_infos = update_info.split(MyConstants.string_split);
+					// 数据包数量+厂家编号+型号+升级版本号
+					String packno = update_infos[0];// 升级包的分包数量
+					String changjia = update_infos[1];
+					String model = update_infos[2];
+					String verno = update_infos[3];
+					Log4jUtil.getLogger("messageData").info("准备升级，升级包分包数量为" + packno + ",版本号为" + verno);
+					byte[] pachno_short = Convert.shortToBytesHH(Short.parseShort(packno));
+					byte[] changjia_int = Convert.intToBytesHH(Integer.parseInt(changjia));
+					byte[] modelo_short = Convert.shortToBytesHH(Short.parseShort(model));
+					byte[] verno_short = Convert.shortToBytesHH(Short.parseShort(verno));
+					answers[i++] = pachno_short[0];
+					answers[i++] = pachno_short[1];
+					answers[i++] = changjia_int[0];
+					answers[i++] = changjia_int[1];
+					answers[i++] = changjia_int[2];
+					answers[i++] = changjia_int[3];
+					answers[i++] = modelo_short[0];
+					answers[i++] = modelo_short[1];
+					answers[i++] = verno_short[0];
+					answers[i++] = verno_short[1];
+					// 校验位
+					byte[] crc = CRC16.getCRC16(answers, 1, 36);
+					answers[i++] = crc[1];
+					answers[i++] = crc[0];
+					Log4jUtil.getLogger("sendUpdateCmd").info("CRC16结果：" + crc[1] + "==" + crc[0]);
+					answers[i++] = MyConstants.nb_update_cmd;// 帧尾
+					map.put("answer", answers);
+					String hex_message_answer = getHexString(answers, answers.length);
+					map.put("hex_message_answer", hex_message_answer);
+					// 删除升级缓存
+					// JedisUtils.del(MyConstants.redis_equupdates + equid);
+				}
+
+			} else {
+				// 上电包需要返回reponse确定切换是否成功
+				byte[] answers = new byte[2];
+				answers[0] = MyConstants._2_equState_reponse;
+				answers[1] = (byte) 0xF1;
+				map.put("answer", answers);
+				String hex_message_answer = getHexString(answers, answers.length);
+				map.put("hex_message_answer", hex_message_answer);
+			}
+		}
+		map.put("result", result);
+
+		return map;
+
+	}
+
+	/**
+	 * 修改ip地址后
+	 * 
+	 * @param message
+	 * @return
+	 */
+	public Map<String, Object> analysis_fixcheck(byte[] message) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		String result = "0";
+		int size = 18;
+		if (message.length > 1) {
+			int i = 0;
+			byte message_type = message[i++]; // 消息类型
+			byte equ_id_1 = message[i++];//
+			byte equ_id_2 = message[i++];
+			byte equ_id_3 = message[i++];
+			byte equ_id_4 = message[i++];
+			byte equstate = message[i++];
+			int equid = Convert.bytesToInt(new byte[] { equ_id_1, equ_id_2, equ_id_3, equ_id_4 });
+			map.put("state", "监控");
+			map.put("nosubmit", "1");
+			result = "1";
+			StringBuffer messageInfo = new StringBuffer();
+			messageInfo.append("修改确认包-设备ID为").append(equid);
+			map.put("messageInfo", messageInfo.toString());
+			// 报文
+			StringBuffer hex_message = new StringBuffer();
+
+			for (int j = 0; j < message.length; ++j) {
+				if (j == size)
+					break;
+				String a = Integer.toHexString(message[j] & 0xff);
+				if (a.length() == 1) {
+					a = "0" + a;
+				}
+				hex_message.append(a);
+			}
+			if (hex_message.toString().length() > 50) {
+				hex_message = new StringBuffer();
+			}
+			map.put("hex_message", hex_message.toString());
+			// 删除设置缓存
+			JedisUtils.del(MyConstants.redis_equsets + equid);
+			// 应答
+			byte[] answers = new byte[2];
+			answers[0] = MyConstants._1_equState_reponse;
+			answers[1] = equstate;
+			map.put("answer", answers);
+			String hex_message_answer = getHexString(answers, answers.length);
+			map.put("hex_message_answer", hex_message_answer);
+		}
+		map.put("result", result);
+		return map;
+
+	}
+
+	// nb升级回应，省电信版本
+	public Map<String, Object> analysis_nb_remoteUpdate(byte[] message) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		String result = "0";
+		int size = 27;// 消息变化体前的字节数量
+		if (message.length > 1) {
+			int i = 0;
+			byte message_type = message[i++]; // 消息类型7E
+			byte xieyiver_1 = message[i++];// 协议版本号
+			byte xieyiver_2 = message[i++];
+			byte baowen_1 = message[i++];// 报文系列号
+			byte baowen_2 = message[i++];
+			byte address_1 = message[i++];// 地址信息
+			byte address_2 = message[i++];
+			byte address_3 = message[i++];
+			byte address_4 = message[i++];
+			byte address_5 = message[i++];
+			byte address_6 = message[i++];
+			byte address_7 = message[i++];
+			byte address_8 = message[i++];
+			byte address_9 = message[i++];
+			byte address_10 = message[i++];
+			byte address_11 = message[i++];
+			byte address_12 = message[i++];
+			byte app_1 = message[i++];// 应用码
+			byte app_2 = message[i++];
+			byte type = message[i++];// 帧类型
+			byte updatetime_1 = message[i++];// 数据上报时间
+			byte updatetime_2 = message[i++];
+			byte updatetime_3 = message[i++];
+			byte updatetime_4 = message[i++];
+			byte updatetime_5 = message[i++];
+			byte updatetime_6 = message[i++];
+			byte upflag = message[i++];// 升级类型
+			short packageno = 0;
+			byte packageno_1 = 0;// 包序列号
+			byte packageno_2 = 0;
+			if (upflag == MyConstants.update_flag01) {
+				size += 1;
+				// 0x01表示成功0x00表示失败0x03表示厂家不符0x04表示型号不符
+				byte operatresult = message[i++];// 操作结果
+			} else if (upflag == MyConstants.update_flag02) {
+				size += 10;
+				byte cj_1 = message[i++];// 厂家编号
+				byte cj_2 = message[i++];
+				byte cj_3 = message[i++];
+				byte cj_4 = message[i++];
+				byte xh_1 = message[i++];// 型号
+				byte xh_2 = message[i++];
+				byte ver_1 = message[i++];// 升级版本号
+				byte ver_2 = message[i++];
+				packageno_1 = message[i++];// 包序列号
+				packageno_2 = message[i++];
+				byte[] packageno_short = new byte[] { packageno_1, packageno_2 };
+				packageno = Convert.bytesToShort(packageno_short);
+			} else if (upflag == MyConstants.update_flag03 || upflag == MyConstants.update_flag04) {
+				size += 9;
+				byte cj_1 = message[i++];// 厂家编号
+				byte cj_2 = message[i++];
+				byte cj_3 = message[i++];
+				byte cj_4 = message[i++];
+				byte xh_1 = message[i++];// 型号
+				byte xh_2 = message[i++];
+				byte ver_1 = message[i++];// 升级版本号
+				byte ver_2 = message[i++];
+				byte operatresult = message[i++];// 操作结果
+			}
+			byte crc_1 = message[i++];// 校验位
+			byte crc_2 = message[i++];
+			byte end = message[i++];// 帧尾
+			// 地址信息的前4位为equid体
+			int equid = Convert.bytesToInt(new byte[] { address_1, address_2, address_3, address_4 });
+			map.put("equid", "" + equid);
+			map.put("state", "监控");
+			result = "1";
+			StringBuffer messageInfo = new StringBuffer();
+			messageInfo.append("FSU到服务器-设备ID为").append(equid);
+			map.put("messageInfo", messageInfo.toString());
+			// 报文
+			StringBuffer hex_message = new StringBuffer();
+
+			for (int j = 0; j < message.length; ++j) {
+				if (j == size)
+					break;
+				String a = Integer.toHexString(message[j] & 0xff);
+				if (a.length() == 1) {
+					a = "0" + a;
+				}
+				hex_message.append(a);
+			}
+			if (hex_message.toString().length() > 50) {
+				hex_message = new StringBuffer(getSizeHexString(message, message.length));
+			}
+			map.put("hex_message", hex_message.toString());
+			// 应答
+			size = 27;
+			boolean needanswer = false;
+			Map<String, String> u_map = JedisUtils.getMap(MyConstants.redis_equupdates + equid);
+			if (u_map == null) {
+				System.out.println("没有找到" + equid + "的升级任务");
+			}
+			String update_info = JedisUtils.get(MyConstants.redis_nbUpdate_info + u_map.get("id"));// 升级包详细信息
+			if (update_info == null) {
+				System.out.println("升级任务可能被删除了");
+				map.put("result", result);
+				return map;
+			}
+			String[] update_infos = update_info.split(MyConstants.string_split);
+			String packno = update_infos[0];// 升级包的分包数量
+			byte[] package_bytes = null;
+			if (packageno > 0) {
+
+				String nbUpdate_package = JedisUtils
+						.get(MyConstants.redis_nbUpdate_package + u_map.get("id") + ":" + packageno);
+				try {
+					package_bytes = nbUpdate_package.getBytes(CharEncoding.ISO_8859_1);
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+			int mess_size = 0;// 消息体字节长度
+			if (upflag == MyConstants.update_flag02) {// 要求获取数据包
+				if (package_bytes != null) {
+					Log4jUtil.getLogger("messageData").info("FSU请求第" + packageno + "个包，大小为" + package_bytes.length);
+				} else {
+					Log4jUtil.getLogger("messageData").info("FSU请求第" + packageno + "个包，但是未找到数据包");
+				}
+				needanswer = true;
+				mess_size += 2;
+				// 加上指定包的字节大小
+				mess_size += package_bytes.length;
+				size += mess_size;
+			} else if (upflag == MyConstants.update_flag03 || upflag == MyConstants.update_flag04) {// 下载完成,升级完成，无字节
+				if (upflag == MyConstants.update_flag03) {
+					Log4jUtil.getLogger("messageData").info("FSU回复下载数据包完成");
+				} else {
+					Log4jUtil.getLogger("messageData").info("FSU回复升级数据包完成");
+				}
+				needanswer = true;
+			}
+			if (needanswer) {
+				size += 3;// 校验位和帧尾
+				// 填充数据
+				byte[] answers = new byte[size];
+				i = 0;
+				answers[i++] = message_type;// 消息类型7E
+				answers[i++] = xieyiver_1;// 协议版本号
+				answers[i++] = xieyiver_2;
+				answers[i++] = baowen_1;// 报文系列号
+				answers[i++] = baowen_2;
+				answers[i++] = address_1;// 地址信息
+				answers[i++] = address_2;
+				answers[i++] = address_3;
+				answers[i++] = address_4;
+				answers[i++] = address_5;
+				answers[i++] = address_6;
+				answers[i++] = address_7;
+				answers[i++] = address_8;
+				answers[i++] = address_9;
+				answers[i++] = address_10;
+				answers[i++] = address_11;
+				answers[i++] = address_12;
+				answers[i++] = app_1; // 应用码
+				answers[i++] = app_2;
+				answers[i++] = 0;// 帧类型
+				answers[i++] = updatetime_1;// 数据上报时间
+				answers[i++] = updatetime_2;
+				answers[i++] = updatetime_3;
+				answers[i++] = updatetime_4;
+				answers[i++] = updatetime_5;
+				answers[i++] = updatetime_6;
+				answers[i++] = upflag;// 升级类型
+				if (upflag == MyConstants.update_flag02) {// 要求获取数据包
+					answers[i++] = packageno_1;
+					answers[i++] = packageno_2;
+					for (byte data : package_bytes) {// 数据包
+						answers[i++] = data;
+					}
+				} else if (upflag == MyConstants.update_flag03 || upflag == MyConstants.update_flag04) {// 下载完成,升级完成
+
+				}
+				// 校验位
+				byte[] crc = CRC16.getCRC16(answers, 1, 26 + mess_size);
+				answers[i++] = crc[1];
+				answers[i++] = crc[0];
+				Log4jUtil.getLogger("sendUpdateCmd").info("包序列号" + packageno + "=CRC16结果：" + crc[1] + "==" + crc[0]);
+				answers[i++] = MyConstants.nb_update_cmd;// 帧尾
+				map.put("answer", answers);
+				String hex_message_answer = getSizeHexString(answers, 30);// 取前30个
+				map.put("hex_message_answer", hex_message_answer);
+			}
+
+		}
+		map.put("result", result);
+		return map;
+
+	}
+
+	// 烟感水浸
+	public Map<String, Object> analysis_otheralarm(byte[] message) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		String result = "0";
+		int size = 12;
+		if (message.length > 1) {
+			int i = 0;
+			byte message_type = message[i++];// 0x31
+			byte equ_id_1 = message[i++];
+			byte equ_id_2 = message[i++];
+			byte equ_id_3 = message[i++];
+			byte equ_id_4 = message[i++];
+			byte equ_state = message[i++];// 0x00正常0x10烟感报警0x01水浸报警
+			byte equ_chargeCent_1 = message[i++];
+			byte equ_chargeCent_2 = message[i++];
+			// 新加的字段
+			byte equ_temperature_1 = message[i++];
+			byte equ_temperature_2 = message[i++];
+			byte equ_humidity = message[i++];// 相对湿度
+			byte signal = message[i++];// 信号强度
+			int equid = Convert.bytesToInt(new byte[] { equ_id_1, equ_id_2, equ_id_3, equ_id_4 });
+			map.put("equid", "" + equid);
+			map.put("type", "31");
+			if ((equ_state & 0xff) == 0x00) {
+				map.put("otheralarm", "0");
+			} else if ((equ_state & 0xff) == 0x10) {
+				map.put("otheralarm", "烟感");
+			} else if ((equ_state & 0xff) == 0x01) {
+				map.put("otheralarm", "水浸");
+			} else if ((equ_state & 0xff) == 0x02) {
+				map.put("otheralarm", "倾斜");
+			} else if ((equ_state & 0xff) == 0x20) {
+				map.put("otheralarm", "震动");
+			}
+			String equ_chargeCent = equ_chargeCent_1 + "." + equ_chargeCent_2;
+			map.put("charge", equ_chargeCent);
+			String equ_temperature = equ_temperature_1 + "." + equ_temperature_2;
+			map.put("temperature", equ_temperature);
+			map.put("humidity", equ_humidity);
+			map.put("signal", signal);
+			result = "1";
+			StringBuffer messageInfo = new StringBuffer();
+			messageInfo.append("烟感水浸震动-设备ID为").append(equid).append("-状态为").append(map.get("otheralarm")).append("-温度为")
+					.append(equ_temperature);
+			map.put("messageInfo", messageInfo.toString());
+			// 报文
+			StringBuffer hex_message = new StringBuffer();
+
+			for (int j = 0; j < message.length; ++j) {
+				if (j == size)
+					break;
+				String a = Integer.toHexString(message[j] & 0xff);
+				if (a.length() == 1) {
+					a = "0" + a;
+				}
+				hex_message.append(a);
+			}
+			if (hex_message.toString().length() > 50) {
+				hex_message = new StringBuffer();
+			}
+			map.put("hex_message", hex_message.toString());
+			// 应答
+			byte[] answers = new byte[2];
+			answers[0] = MyConstants._1_equState_reponse;
+			answers[1] = 0x0;
+			map.put("answer", answers);
+			String hex_message_answer = getHexString(answers, answers.length);
+			map.put("hex_message_answer", hex_message_answer);
+		}
+		map.put("result", result);
+		return map;
+
+	}
+
+	// 图片传输-自定义协议
+	public Map<String, Object> analysis_photo_61(byte[] message) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		String result = "0";
+		if (message.length > 1) {
+			int i = 0;
+			byte message_type = message[i++]; // 消息类型61
+			byte address_1 = message[i++];// 地址信息
+			byte address_2 = message[i++];
+			byte address_3 = message[i++];
+			byte address_4 = message[i++];
+			byte packnos__1 = message[i++];
+			byte packnos__2 = message[i++];
+			byte data_length = message[i++];
+
+			// 地址信息的前4位为equid体
+			int equid = Convert.bytesToInt(new byte[] { address_1, address_2, address_3, address_4 });
+			int packnos = Convert.bytesToInt(new byte[] { 0, 0, packnos__1, packnos__2 });
+			// 将包的总数量缓存起来
+			JedisUtils.set(MyConstants.redis_nbPhoto_info + equid, packnos + "",
+					MyConstants.redis_nbPhoto_cacheSeconds);
+
+			map.put("equid", "" + equid);
+			map.put("state", "监控");
+			result = "1";
+			StringBuffer messageInfo = new StringBuffer();
+			messageInfo.append("包总数量为" + packnos + ",analysis_photo_61-设备ID为").append(equid);
+			map.put("messageInfo", messageInfo.toString());
+			// 报文
+			StringBuffer hex_message = new StringBuffer();
+			int size = 10;
+			for (int j = 0; j < message.length; ++j) {
+				if (j == size)
+					break;
+				String a = Integer.toHexString(message[j] & 0xff);
+				if (a.length() == 1) {
+					a = "0" + a;
+				}
+				hex_message.append(a);
+			}
+			if (hex_message.toString().length() > 50) {
+				hex_message = new StringBuffer();
+			}
+			map.put("hex_message", hex_message.toString());
+			// 应答
+			// 填充数据
+			byte[] answers = new byte[1];
+			i = 0;
+			answers[i++] = message_type;// 消息类型7E
+			// map.put("answer", answers);
+			// String hex_message_answer = getHexString(answers,
+			// answers.length);
+			// map.put("hex_message_answer", hex_message_answer);
+		}
+		map.put("result", result);
+		return map;
+
+	}
+
+	// 图片传输-自定义协议
+	public Map<String, Object> analysis_photo_62(byte[] message) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		String result = "0";
+		if (message.length > 1) {
+			int i = 0;
+			byte message_type = message[i++]; // 消息类型7E
+			byte address_1 = message[i++];// 地址信息
+			byte address_2 = message[i++];
+			byte address_3 = message[i++];
+			byte address_4 = message[i++];
+			int packageno = 0;// 序列号整型
+			int packnos = 0;// 包的总数量（在缓存中）
+			byte packindex_1 = message[i++];
+			byte packindex_2 = message[i++];
+			byte data_length = message[i++];
+			// 地址信息的前4位为equid体
+			int equid = Convert.bytesToInt(new byte[] { address_1, address_2, address_3, address_4 });
+			if (JedisUtils.get(MyConstants.redis_nbPhoto_info + equid) != null) {
+				packnos = Short.parseShort(JedisUtils.get(MyConstants.redis_nbPhoto_info + equid));
+			}
+			int photo_data_size = Convert.getUnsignedShort(Convert.bytesToShort(new byte[] { 0, data_length }));
+			System.out.println(photo_data_size + "---分包大小，包总数量为" + packnos + ",message总长度:" + message.length);
+			byte[] packageno_short = new byte[] { packindex_1, packindex_2 };
+			packageno = Convert.getUnsignedShort(Convert.bytesToShort(packageno_short));
+			byte[] photo_data = new byte[photo_data_size];
+
+			for (int j = 1; j <= photo_data_size; j++) {
+				photo_data[j - 1] = message[i++];
+			}
+			// 应该有监控重新请求功能，后期加入！！！
+			// 整合图片包，保存每个分包到redis，待全部下载成再合成所有
+			JedisUtils.set(MyConstants.redis_nbPhoto_package + equid + ":" + packageno,
+					Convert.bytesToString(photo_data), MyConstants.redis_nbPhoto_cacheSeconds);
+			// 最后一个分包下载成功-包的序列号等于总包数时整合List<String>，传输到smartlock
+			if (packageno == packnos) {
+				// List<String> photos = new ArrayList<String>();
+				String content = null;
+				// 测试
+				byte[] photo = new byte[packnos * MyConstants.packagesize_photo];// 会比实际大
+				int p = 0;
+				for (int p_i = 1; p_i <= packnos; p_i++) {
+					content = JedisUtils.get(MyConstants.redis_nbPhoto_package + equid + ":" + p_i);
+					byte[] fileBytes = null;
+					try {
+						//
+						// 转为字节数据时必须选择编码格式为ISO_8859_1，否则与转换前的数据不一致，因为UTF_8（服务器编码环境）可能会占双字节
+						fileBytes = content.getBytes(CharEncoding.ISO_8859_1);
+						for (byte f_b : fileBytes) {
+							photo[p++] = f_b;
+						}
+					} catch (UnsupportedEncodingException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					// photos.add(content);
+				}
+				String filename = new Date().getTime() + "";
+				// 图片位置暂时写死，后面改到文件服务器上
+				// String path =
+				// "C:\\Program
+				// Files\\apache-tomcat-7.0.77-75\\webapps\\smartlock2\\static\\images_temp";
+				// FileOperateUtil.getFile(photo, path, filename, "jpg");
+				// 改为上传到文件服务器
+				// 文件转为base64
+				Base64UploadClass fileBase64 = Base64UploadClass.getFileBase64();
+				String filecontent = fileBase64.byteTobase64(photo);
+				String savePath = "/nb_photo/";// 文件服务器照片地址
+
+				FileOperateUtil.uploadToFileServer(filecontent, savePath, filename);
+				savePath = "nb_photo";
+				// 传输photos到smartlock
+				String param = null;
+				// encode还是有问题
+				// param = URLEncoder.encode("datas", "UTF-8")
+				// + "="
+				// + URLEncoder.encode(JsonUtil.writeAsString(photos),
+				// "UTF-8") + "&equid=" + equid + "&filename="
+				// + filename;
+				param = "savepath=" + savePath + "&equid=" + equid + "&filename=" + filename;
+				try {
+					new HttpUtil().openConnectionForPost(MyConstants.uploaddata_photo_server.toString(), param);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			map.put("equid", "" + equid);
+			map.put("state", "监控");
+			result = "1";
+			StringBuffer messageInfo = new StringBuffer();
+			messageInfo.append("包序列号:" + packageno + ",analysis_photo_62-设备ID为").append(equid);
+			map.put("messageInfo", messageInfo.toString());
+			// 报文
+			StringBuffer hex_message = new StringBuffer();
+			int size = 30;
+			for (int j = 0; j < message.length; ++j) {
+				if (j == size)
+					break;
+				String a = Integer.toHexString(message[j] & 0xff);
+				if (a.length() == 1) {
+					a = "0" + a;
+				}
+				hex_message.append(a);
+			}
+			if (hex_message.toString().length() > 50) {
+				hex_message = new StringBuffer();
+			}
+			map.put("hex_message", hex_message.toString());
+
+		}
+		map.put("result", result);
+		return map;
+
+	}
+
+	public static void main(String[] a) {
+		byte[] b = new byte[] { 0x50, 0x51 };// 转ASC码
+		System.out.println(Convert.bytesToString(b));
+
+	}
+
+	private String needAnalysis(byte[] message) {
+		if (message != null && message.length > 0) {
+			int first = message[0] & 0xff;
+			if (first == MyConstants._1_equConnect_check) {
+				return "2";
+			} else if (first == MyConstants._1_equState_check) {
+				return "1";
+			} else if (first == MyConstants._1_equRemote_wait) {
+				return "3";
+			} else if (first == MyConstants.equPowerOn) {
+				return "4";
+			} else if (first == MyConstants.equSim) {
+				return "5";
+			} else if (first == MyConstants.equId_query) {
+				return "6";
+			} else if (first == MyConstants._1_equfix_check) {
+				return "7";
+			} else if (first == MyConstants._1_demo_read) {
+				return "90";
+			} else if (first == MyConstants._1_equalarm_other) {
+				return "91";
+			} else if (first == MyConstants._1_nb_updating) {// 正在升级中的设备回应
+				return "80";
+			} else if (first == MyConstants._1_nb_update_end) {// 升级完成后设备回应
+				return "81";
+			} else if (first == MyConstants.nb_update_cmd) {// nb远程升级，参照省电信版本
+				return "88";
+			} else if (first == MyConstants.photo_61) {
+				return "61";
+			} else if (first == MyConstants.photo_62) {
+				return "62";
+			} else if (first == MyConstants.lean_53) {
+				return "53";
+			}
+
+		}
+		return null;
+	}
+
+	private static byte getXor(byte[] datas, int exceptLast) {
+
+		byte temp = datas[0];
+
+		for (int i = 1; i < datas.length - exceptLast; i++) {
+			temp ^= datas[i];
+		}
+		return temp;
+	}
+
+	private byte[] substring_bytes(byte[] b, int prelength) {
+		byte[] newByte = new byte[prelength];
+
+		for (int i = 0; i < prelength; i++) {
+			newByte[i] = b[i];
+		}
+		return newByte;
+
+	}
+
+	public static String add0_before(String s, int size) {
+		return String.format("%0" + size + "d", Integer.valueOf(s));
+	}
+}
