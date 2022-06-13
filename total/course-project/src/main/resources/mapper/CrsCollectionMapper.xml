@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ttwl.dao.CrsCollectionMapper">
+    <select id="getCrsCollectionList" resultType="com.ttwl.vo.CrsCollectionVo">
+        SELECT l.school_name schoolName,
+        l.id schoolId,
+        s.id classId,
+        s.class_name className,
+        cc.id collectionId,
+        cc.collection_name collectionName,
+        cc.collection_difficulty collectionDifficulty,
+        cc.collection_crowd collectionCrowd,
+        cc.create_time createTime,
+        sp.id pictureId,
+        sp.picture_path picturePath
+        FROM `crs_collection` cc
+        LEFT JOIN crs_user cu ON cc.user_id = cu.id
+        LEFT JOIN sys_picture sp ON cc.picture_id = sp.id
+        LEFT JOIN `school` l ON cc.school_id=l.id
+        LEFT JOIN class s ON s.id=cu.class_id
+        WHERE
+        1=1
+        <if test="userId !=null and userId !=''">
+            AND cc.user_id=#{userId}
+        </if>
+        <if test="schoolId !=null and schoolId !=''">
+            AND cc.school_id=#{schoolId}
+        </if>
+    </select>
+</mapper>
+
+

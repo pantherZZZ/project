@@ -1,0 +1,51 @@
+
+server:
+  port: 12001
+
+#spring:
+#  datasource:
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    url: jdbc:mysql://127.0.0.1:3306/light_taiott_com?useUnicode=true&characterEncoding=UTF-8&serverTimezone=GMT&useSSL=false
+#    username: light_taiott_com
+#    password: p2eaFAeLGpZZjdSR
+spring:
+  devtools:
+    restart:
+      enabled: true
+
+  http:
+    encoding:
+      charset: utf-8
+      force: true
+      enabled: true
+
+
+  datasource:
+    url: jdbc:mysql://101.132.245.105:3306/course_project?useUnicode=true&characterEncoding=UTF-8&serverTimezone=GMT&useSSL=false
+    username: course_project
+    password: YjBNHkNm4zJBtNMn
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initialSize: 5
+      minIdle: 5
+      maxActive: 20
+      maxWait: 60000
+      timeBetweenEvictionRunsMillis: 60000
+      minEvictableIdleTimeMillis: 300000
+      validationQuery: SELECT 1 FROM DUAL
+      testWhileIdle: true
+      testOnBorrow: false
+      testOnReturn: false
+      poolPreparedStatements: true
+      maxPoolPreparedStatementPerConnectionSize: 20
+      filters: mergeStat
+
+mybatis-plus:
+  #  type-aliases-package: com.jt.pojo
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+
